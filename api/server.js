@@ -74,6 +74,22 @@ app.get('/api/leads', async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Error fetching leads" }); }
 });
 // ... Other POST, PUT, DELETE endpoints will go here...
+app.put('/api/company-profile/:id', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const profileId = req.params.id;
+        const updatedData = req.body; // Contains the new name, agent name, logo url etc.
+
+        // The document ID from the database is used to update
+        await db.collection('company_profile').doc(profileId).update(updatedData);
+
+        console.log(`Company profile ${profileId} updated.`);
+        res.status(200).json({ message: 'Profile updated successfully!', data: updatedData });
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).json({ message: "Failed to update profile", error: error.message });
+    }
+});
 
 
 // --- ONE-TIME DATABASE SEEDER ---
@@ -83,7 +99,7 @@ app.get('/api/seed-database', async (req, res) => {
     if (!db) return res.status(500).send("Database not connected.");
     try {
         console.log("Seeding database...");
-        
+
         // Seed Fleet
         const fleetData = JSON.parse(await fs.readFile(path.join(__dirname, '../public/fleet_db.json'), 'utf8'));
         for (const car of fleetData) {
@@ -95,7 +111,7 @@ app.get('/api/seed-database', async (req, res) => {
         const profileData = JSON.parse(await fs.readFile(path.join(__dirname, '../public/company_profile.json'), 'utf8'));
         await db.collection('company_profile').doc('main').set(profileData);
         console.log(`Company profile for "${profileData.company_name}" seeded.`);
-        
+
         // Seed Market Fleet
         const marketData = JSON.parse(await fs.readFile(path.join(__dirname, '../public/market_fleet.json'), 'utf8'));
         await db.collection('market_fleet').doc('default').set({ vehicles: marketData });
