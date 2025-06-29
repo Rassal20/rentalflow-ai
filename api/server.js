@@ -1,8 +1,8 @@
 /*
  * RentalFlow AI Server - FINAL PLATFORM-AGNOSTIC VERSION
  * ---------------------------------------------------------
- * This version explicitly serves static files and listens on 0.0.0.0
- * to ensure compatibility with cloud hosts like Render.
+ * This version explicitly serves static files and the dashboard page,
+ * and listens on 0.0.0.0 to ensure compatibility with cloud hosts like Render.
  */
 
 const express = require('express');
@@ -31,6 +31,15 @@ try {
 app.use(express.json());
 // Serve static files (like dashboard.html) from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
+
+
+// --- PAGE SERVING ROUTE (THE FIX IS HERE) ---
+// This route will catch requests to the root URL (/) and serve the dashboard.
+// It also serves the dashboard if the full path is requested.
+app.get(['/', '/dashboard.html'], (req, res) => {
+    // We construct an absolute path to the file to be safe.
+    res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+});
 
 
 // --- CONFIGURATION ---
@@ -69,7 +78,7 @@ app.get('/healthz', (req, res) => {
 });
 
 
-// --- SERVER STARTUP (THE FIX IS HERE) ---
+// --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0'; // Listen on all available network interfaces
 
