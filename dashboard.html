@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentalFlow AI - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        .sidebar-link { transition: background-color 0.2s, color 0.2s; }
+        .sidebar-link:hover, .sidebar-link.active { background-color: #4f46e5; color: white; }
+        .stat-card { background-color: #1f2937; border-radius: 0.5rem; padding: 1.5rem; }
+        .modal-bg { background-color: rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white" x-data="appController()" x-init="init()" x-cloak>
+
+    <div class="flex h-screen">
+        <aside class="w-64 bg-gray-800 p-4 flex flex-col">
+            <div class="flex items-center mb-8">
+                <img :src="companyProfile.logo_url" alt="Logo" class="h-10 w-10 mr-3 rounded-full object-cover bg-gray-700">
+                <h1 class="text-xl font-bold" x-text="companyProfile.company_name"></h1>
+            </div>
+            <nav class="flex flex-col space-y-2">
+                <a href="#" @click.prevent="activePage = 'dashboard'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'dashboard'}"><i class="fas fa-tachometer-alt w-6"></i> Dashboard</a>
+                <a href="#" @click.prevent="activePage = 'fleet'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'fleet'}"><i class="fas fa-car w-6"></i> Fleet</a>
+                <a href="#" @click.prevent="activePage = 'leads'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'leads'}"><i class="fas fa-users w-6"></i> Leads</a>
+                <a href="#" @click.prevent="activePage = 'bookings'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'bookings'}"><i class="fas fa-calendar-check w-6"></i> Bookings</a>
+            </nav>
+            <div class="mt-auto">
+                 <p class="text-xs text-gray-500">RentalFlow AI v1.0</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-y-auto">
+
+            <div x-show="activePage === 'dashboard'">
+                 <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                     <div class="stat-card">
+                         <h3 class="text-gray-400">Total Vehicles</h3>
+                         <p class="text-4xl font-bold" x-text="fleet.length"></p>
+                     </div>
+                     <div class="stat-card">
+                         <h3 class="text-gray-400">Available Now</h3>
+                         <p class="text-4xl font-bold text-green-500" x-text="fleet.filter(v => v.status === 'Available').length"></p>
+                     </div>
+                     <div class="stat-card">
+                         <h3 class="text-gray-400">On Rent</h3>
+                         <p class="text-4xl font-bold text-yellow-500" x-text="fleet.filter(v => v.status !== 'Available').length"></p>
+                     </div>
+                     <div class="stat-card">
+                         <h3 class="text-gray-400">New Leads (7 days)</h3>
+                         <p class="text-4xl font-bold">0</p>
+                     </div>
+                 </div>
+                 <div class="mt-8 bg-gray-800 p-6 rounded-lg">
+                    </div>
+            </div>
+
+            <div x-show="activePage === 'fleet'">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold">Fleet Management</h2>
+                    <button @click="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i class="fas fa-plus mr-2"></i> Add Vehicle</button>
+                </div>
+                <div class="bg-gray-800 rounded-lg overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="p-4">Model</th>
+                                <th class="p-4">Category</th>
+                                <th class="p-4">Year</th>
+                                <th class="p-4">Daily Rate</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="vehicle in fleet" :key="vehicle.id">
+                                <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                                    <td class="p-4" x-text="vehicle.model"></td>
+                                    <td class="p-4" x-text="vehicle.category"></td>
+                                    <td class="p-4" x-text="vehicle.year"></td>
+                                    <td class="p-4" x-text="`AED ${vehicle.pricing.daily.min_rate} - ${vehicle.pricing.daily.max_rate}`"></td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-1 rounded-full text-xs"
+                                              :class="{
+                                                'bg-green-500/20 text-green-400': vehicle.status === 'Available',
+                                                'bg-yellow-500/20 text-yellow-400': vehicle.status === 'On Rent'
+                                              }"
+                                              x-text="vehicle.status">
+                                        </span>
+                                    </td>
+                                    <td class="p-4 space-x-2">
+                                        <button @click="openEditModal(vehicle)" class="text-blue-400 hover:text-blue-300"><i class="fas fa-pencil-alt"></i></button>
+                                        <button @click="deleteVehicle(vehicle.id)" class="text-red-500 hover:text-red-400"><i class="fas fa-trash-alt"></i></button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="fleet.length === 0">
+                                <tr>
+                                    <td colspan="6" class="text-center p-8 text-gray-500">No vehicles in the fleet. Click 'Add Vehicle' to start.</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            </main>
+    </div>
+
+    <div x-show="isFleetModalOpen" @keydown.escape.window="closeFleetModal()" class="fixed inset-0 z-50 flex items-center justify-center modal-bg">
+        <div @click.outside="closeFleetModal()" class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-2xl font-bold" x-text="isEditMode ? 'Edit Vehicle' : 'Add New Vehicle'"></h3>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="hidden" x-model="fleetFormData.id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Model</label>
+                        <input type="text" x-model="fleetFormData.model" class="mt-1 w-full bg-gray-700 rounded p-2 border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Category</label>
+                        <input type="text" x-model="fleetFormData.category" class="mt-1 w-full bg-gray-700 rounded p-2 border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Year</label>
+                        <input type="number" x-model.number="fleetFormData.year" class="mt-1 w-full bg-gray-700 rounded p-2 border border-gray-600">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-300">Color</label>
+                        <input type="text" x-model="fleetFormData.color" class="mt-1 w-full bg-gray-700 rounded p-2 border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Status</label>
+                         <select x-model="fleetFormData.status" class="mt-1 w-full bg-gray-700 rounded p-2 border border-gray-600">
+                            <option value="Available">Available</option>
+                            <option value="On Rent">On Rent</option>
+                            <option value="Maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-300">Next Available Date</label>
+                        <input type="date" x-model="fleetFormData.next_available_date" class="mt-1 w-full bg-gray-700 rounded p-2 border border-gray-600">
+                    </div>
+                </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-300">Specs</label>
+                    <textarea x-model="fleetFormData.specs" class="mt-1 w-full bg-gray-700 rounded p-2 border border-gray-600" rows="3"></textarea>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-2">Pricing (AED)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                           <label class="block text-sm font-medium text-gray-400">Daily (Min-Max)</label>
+                           <div class="flex items-center space-x-2 mt-1">
+                               <input type="number" x-model.number="fleetFormData.pricing.daily.min_rate" class="w-full bg-gray-700 rounded p-2 border border-gray-600">
+                               <input type="number" x-model.number="fleetFormData.pricing.daily.max_rate" class="w-full bg-gray-700 rounded p-2 border border-gray-600">
+                           </div>
+                        </div>
+                        <div>
+                           <label class="block text-sm font-medium text-gray-400">Weekly (Min-Max)</label>
+                           <div class="flex items-center space-x-2 mt-1">
+                               <input type="number" x-model.number="fleetFormData.pricing.weekly.min_rate" class="w-full bg-gray-700 rounded p-2 border border-gray-600">
+                               <input type="number" x-model.number="fleetFormData.pricing.weekly.max_rate" class="w-full bg-gray-700 rounded p-2 border border-gray-600">
+                           </div>
+                        </div>
+                        <div>
+                           <label class="block text-sm font-medium text-gray-400">Monthly (Min-Max)</label>
+                           <div class="flex items-center space-x-2 mt-1">
+                               <input type="number" x-model.number="fleetFormData.pricing.monthly.min_rate" class="w-full bg-gray-700 rounded p-2 border border-gray-600">
+                               <input type="number" x-model.number="fleetFormData.pricing.monthly.max_rate" class="w-full bg-gray-700 rounded p-2 border border-gray-600">
+                           </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="p-6 bg-gray-900/50 text-right space-x-3">
+                <button @click="closeFleetModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</button>
+                <button @click="saveVehicle()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Vehicle</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function appController() {
+            return {
+                // === STATE ===
+                activePage: 'dashboard',
+                fleet: [],
+                leads: [],
+                companyProfile: { company_name: 'Loading...', logo_url: '', ai_agent_name: 'Agent' },
+                isFleetModalOpen: false,
+                isEditMode: false,
+                fleetFormData: {},
+
+                // === METHODS ===
+                init() {
+                    this.loadCompanyProfile();
+                    this.loadFleetData(); // Load fleet on init
+                    this.$watch('activePage', (page) => {
+                        if (page === 'fleet') this.loadFleetData();
+                        if (page === 'dashboard') this.loadFleetData(); // Also load for stats
+                    });
+                },
+                async loadCompanyProfile() {
+                    try {
+                        const response = await fetch('/api/company-profile');
+                        this.companyProfile = await response.json();
+                    } catch (e) { this.companyProfile.company_name = 'Error'; }
+                },
+                async loadFleetData() {
+                    try {
+                        const response = await fetch('/api/fleet');
+                        this.fleet = await response.json();
+                    } catch (e) { console.error("Error loading fleet", e); }
+                },
+
+                // --- Fleet Modal & CRUD Methods ---
+                getNewVehicleTemplate() {
+                    return {
+                        model: '', category: '', year: new Date().getFullYear(), color: '', status: 'Available',
+                        specs: '', next_available_date: '',
+                        pricing: {
+                            daily: { min_rate: 0, max_rate: 0 },
+                            weekly: { min_rate: 0, max_rate: 0 },
+                            monthly: { min_rate: 0, max_rate: 0 }
+                        },
+                        security_deposit: { refundable: 0 }
+                    };
+                },
+                openAddModal() {
+                    this.isEditMode = false;
+                    this.fleetFormData = this.getNewVehicleTemplate();
+                    this.isFleetModalOpen = true;
+                },
+                openEditModal(vehicle) {
+                    this.isEditMode = true;
+                    // Create a deep copy to avoid editing the table while typing in the modal
+                    this.fleetFormData = JSON.parse(JSON.stringify(vehicle));
+                    this.isFleetModalOpen = true;
+                },
+                closeFleetModal() {
+                    this.isFleetModalOpen = false;
+                },
+                async saveVehicle() {
+                    const vehicleData = this.fleetFormData;
+                    const url = this.isEditMode ? `/api/fleet/${vehicleData.id}` : '/api/fleet';
+                    const method = this.isEditMode ? 'PUT' : 'POST';
+
+                    try {
+                        const response = await fetch(url, {
+                            method: method,
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(vehicleData)
+                        });
+                        if (!response.ok) throw new Error('Failed to save vehicle.');
+                        
+                        alert(`Vehicle ${this.isEditMode ? 'updated' : 'added'} successfully!`);
+                        this.closeFleetModal();
+                        this.loadFleetData(); // Refresh the list
+                    } catch(e) {
+                        alert('An error occurred. Please check the console.');
+                        console.error(e);
+                    }
+                },
+                async deleteVehicle(id) {
+                    if (!confirm('Are you sure you want to delete this vehicle? This cannot be undone.')) return;
+                    
+                    try {
+                        const response = await fetch(`/api/fleet/${id}`, { method: 'DELETE' });
+                        if (!response.ok) throw new Error('Failed to delete vehicle.');
+                        
+                        alert('Vehicle deleted successfully!');
+                        this.loadFleetData(); // Refresh the list
+                    } catch(e) {
+                        alert('An error occurred. Please check the console.');
+                        console.error(e);
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html>

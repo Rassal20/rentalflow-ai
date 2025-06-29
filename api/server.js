@@ -1,31 +1,41 @@
-/*
- * RentalFlow AI Server - FINAL CLOUD & FIRESTORE VERSION
+/* 
+ * RentalFlow AI Server - FINAL WITH GEMINI AI & FIREBASE INTEGRATION
  * ---------------------------------------------------------
- * This is the definitive server code. It connects to Firestore and serves
- * a full API for fleet management, leads, and company profiles.
+ * Full integration with Firebase Firestore and Gemini AI
  */
 
 const express = require('express');
 const admin = require('firebase-admin');
 const path = require('path');
 const fetch = require('node-fetch');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const app = express();
 
-// --- INITIALIZE FIREBASE ADMIN (SECURE RENDER/VERCEL METHOD) ---
+// --- INITIALIZE FIREBASE ADMIN ---
 let db;
 try {
   if (process.env.FIREBASE_CREDENTIALS && !admin.apps.length) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    admin.initializeApp({ 
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: "https://rentalflow-ai-app.firebaseio.com"
+    });
     db = admin.firestore();
-    console.log("Firebase Admin SDK initialized successfully.");
+    console.log("✅ Firebase Admin SDK initialized successfully");
   } else if (admin.apps.length) {
     db = admin.firestore();
-    console.log("Firebase Admin SDK already initialized.");
+    console.log("ℹ️ Firebase Admin SDK already initialized");
   }
 } catch (error) {
-  console.error("Firebase initialization failed:", error.message);
+  console.error("❌ Firebase initialization failed:", error.message);
 }
+
+// --- INITIALIZE GEMINI AI ---
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error("⚠️ GEMINI_API_KEY environment variable missing! AI features disabled");
+}
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 // --- MIDDLEWARE ---
 app.use(express.json());
@@ -34,138 +44,207 @@ app.use(express.static(path.join(__dirname, '../public')));
 // --- CONFIGURATION ---
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8098722195:AAHYS_feh9J7iN2EkpjLla4ULfocdYEXctg';
 
-// --- DATABASE HELPER FUNCTIONS (FIRESTORE) ---
+// --- FIREBASE HELPER FUNCTIONS ---
 const getCollection = async (collectionName) => {
-    if (!db) throw new Error("Database not initialized.");
+    if (!db) throw new Error("Database not initialized");
     const snapshot = await db.collection(collectionName).get();
-    if (snapshot.empty) return [];
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.empty ? [] : snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
+
+const getDocument = async (collectionName, docId) => {
+    if (!db) throw new Error("Database not initialized");
+    const doc = await db.collection(collectionName).doc(docId).get();
+    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+};
+
+// --- AI RESPONSE GENERATOR ---
+async function generateAIResponse(userMessage, companyProfile, fleetData, marketFleet) {
+  if (!genAI) {
+    console.log("Skipping AI response - Gemini not initialized");
+    return null;
+  }
+  
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    
+    // Prepare fleet information
+    const fleetInfo = [...fleetData, ...marketFleet].map(v => 
+      `${v.model} (${v.category}) - ${v.pricing?.daily ? `AED ${v.pricing.daily.min_rate}-${v.pricing.daily.max_rate}/day` : 'Price on request'}`
+    );
+    
+    // Remove duplicates
+    const uniqueFleet = [...new Set(fleetInfo)].slice(0, 10);
+
+    // Custom prompt for rental business
+    const prompt = `
+      Role: You are ${companyProfile.ai_agent_name || 'Alex'}, the AI agent for ${companyProfile.company_name || 'Prestige Rentals Dubai'}
+      Context: Responding to customer inquiry about luxury car rentals in Dubai
+      Current Date: ${new Date().toISOString().split('T')[0]}
+      
+      **FLEET INFORMATION:**
+      ${uniqueFleet.join('\n')}
+      
+      **SERVICES:**
+      - Free delivery anywhere in Dubai
+      - 24/7 customer support
+      - Comprehensive insurance included
+      - Flexible rental periods (hourly, daily, weekly, monthly)
+      
+      **CUSTOMER MESSAGE:**
+      "${userMessage}"
+      
+      **RESPONSE GUIDELINES:**
+      1. Be friendly and professional (use customer's name if available)
+      2. Highlight 1-2 relevant vehicles from our fleet
+      3. Mention key benefits where appropriate
+      4. Explain pricing clearly (show sample rates if possible)
+      5. For availability, ask for specific dates
+      6. Keep response under 400 characters
+      7. Always end with a question to continue conversation
+      8. Use 1-2 relevant emojis
+      9. NEVER mention you're an AI bot
+      10. Include special offers if available
+      
+      **SIGNATURE:**
+      - Always include name and company at the end
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response.text();
+    console.log("🤖 Generated AI Response:", response);
+    return response;
+  } catch (error) {
+    console.error("❌ Gemini Error:", error);
+    return null;
+  }
+}
 
 // --- PAGE SERVING ROUTE ---
 app.get(['/', '/dashboard.html'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
-// --- API ENDPOINTS for the DASHBOARD ---
+// --- API ENDPOINTS ---
 
 // COMPANY PROFILE
 app.get('/api/company-profile', async (req, res) => {
     try {
         const profile = await getCollection('company_profile');
-        res.status(200).json(profile[0] || {}); // Return first profile found
-    } catch(e) { res.status(500).json({ message: "Error fetching profile" }); }
+        res.status(200).json(profile[0] || {});
+    } catch(e) { 
+        res.status(500).json({ message: "Error fetching profile" }); 
+    }
 });
 
 app.put('/api/company-profile/:id', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const profileId = req.params.id;
         const updatedData = req.body;
         await db.collection('company_profile').doc(profileId).update(updatedData);
-        console.log(`Company profile ${profileId} updated.`);
-        res.status(200).json({ message: 'Profile updated successfully!', data: updatedData });
+        res.status(200).json({ message: 'Profile updated!', data: updatedData });
     } catch (error) {
-        console.error("Error updating profile:", error);
         res.status(500).json({ message: "Failed to update profile", error: error.message });
     }
 });
 
-// FLEET
+// FLEET MANAGEMENT
 app.get('/api/fleet', async (req, res) => {
     try {
         const fleet = await getCollection('fleet');
         res.status(200).json(fleet);
-    } catch (e) { res.status(500).json({ message: "Error fetching fleet" }); }
+    } catch (e) { 
+        res.status(500).json({ message: "Error fetching fleet" }); 
+    }
 });
 
 app.post('/api/fleet', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const newVehicle = req.body;
-        const docRef = newVehicle.id
+        const docRef = newVehicle.id 
             ? db.collection('fleet').doc(newVehicle.id)
             : db.collection('fleet').doc();
-
-        if (!newVehicle.id) {
-            newVehicle.id = docRef.id;
-        }
-
-        await docRef.set(newVehicle, { merge: true });
-        console.log(`New vehicle added with ID: ${newVehicle.id}`);
-        res.status(201).json({ message: 'Vehicle added successfully!', vehicle: newVehicle });
+            
+        if (!newVehicle.id) newVehicle.id = docRef.id;
+        await docRef.set(newVehicle);
+        res.status(201).json({ message: 'Vehicle added!', vehicle: newVehicle });
     } catch (error) {
-        console.error("Error adding vehicle:", error);
         res.status(500).json({ message: "Failed to add vehicle", error: error.message });
     }
 });
 
 app.put('/api/fleet/:id', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const vehicleId = req.params.id;
         const updatedData = req.body;
         await db.collection('fleet').doc(vehicleId).update(updatedData);
-        console.log(`Vehicle ${vehicleId} updated.`);
-        res.status(200).json({ message: 'Vehicle updated successfully!', data: updatedData });
+        res.status(200).json({ message: 'Vehicle updated!', data: updatedData });
     } catch (error) {
-        console.error("Error updating vehicle:", error);
         res.status(500).json({ message: "Failed to update vehicle", error: error.message });
     }
 });
 
 app.delete('/api/fleet/:id', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const vehicleId = req.params.id;
         await db.collection('fleet').doc(vehicleId).delete();
-        console.log(`Vehicle ${vehicleId} deleted.`);
-        res.status(200).json({ message: 'Vehicle deleted successfully!' });
+        res.status(200).json({ message: 'Vehicle deleted!' });
     } catch (error) {
-        console.error("Error deleting vehicle:", error);
         res.status(500).json({ message: "Failed to delete vehicle", error: error.message });
     }
 });
 
-// LEADS & BOOKINGS
+// MARKET FLEET
+app.get('/api/market-fleet', async (req, res) => {
+    try {
+        const fleet = await getCollection('market_fleet');
+        res.status(200).json(fleet);
+    } catch (e) { 
+        res.status(500).json({ message: "Error fetching market fleet" }); 
+    }
+});
+
+// BOOKINGS
 app.get('/api/bookings', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const bookings = await getCollection('bookings');
         res.status(200).json(bookings);
     } catch (e) {
-        console.error("Error fetching bookings:", e);
         res.status(500).json({ message: "Error fetching bookings" });
     }
 });
 
 app.post('/api/bookings', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const newBooking = req.body;
-        const docRef = await db.collection('bookings').add(newBooking);
-        console.log(`New booking added with ID: ${docRef.id}`);
-        res.status(201).json({ message: 'Booking added successfully!', bookingId: docRef.id });
+        const docRef = await db.collection('bookings').add({
+            ...newBooking,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        res.status(201).json({ message: 'Booking added!', bookingId: docRef.id });
     } catch (error) {
-        console.error("Error adding booking:", error);
         res.status(500).json({ message: "Failed to add booking", error: error.message });
     }
 });
 
-// LEADS ENDPOINTS
+// LEADS
 app.get('/api/leads', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const leads = await getCollection('leads');
         res.status(200).json(leads);
     } catch (e) {
-        console.error("Error fetching leads:", e);
         res.status(500).json({ message: "Error fetching leads" });
     }
 });
 
 app.post('/api/leads', async (req, res) => {
-    if (!db) return res.status(500).json({ message: "Database not connected." });
+    if (!db) return res.status(500).json({ message: "Database not connected" });
     try {
         const newLead = {
             ...req.body,
@@ -173,71 +252,105 @@ app.post('/api/leads', async (req, res) => {
             status: 'new'
         };
         const docRef = await db.collection('leads').add(newLead);
-        console.log(`New lead added with ID: ${docRef.id}`);
-        res.status(201).json({ message: 'Lead added successfully!', leadId: docRef.id });
+        res.status(201).json({ message: 'Lead added!', leadId: docRef.id });
     } catch (error) {
-        console.error("Error adding lead:", error);
         res.status(500).json({ message: "Failed to add lead", error: error.message });
     }
 });
 
-// --- TELEGRAM BOT LOGIC ---
+// CLIENT DOCUMENTS
+app.post('/api/documents', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected" });
+    try {
+        const newDoc = {
+            ...req.body,
+            uploadedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        const docRef = await db.collection('documents').add(newDoc);
+        res.status(201).json({ message: 'Document uploaded!', docId: docRef.id });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to upload document", error: error.message });
+    }
+});
+
+// --- TELEGRAM BOT WITH AI INTEGRATION ---
 app.post('/api/webhook/telegram', express.json(), async (req, res) => {
     try {
-        console.log("Received Telegram update:", JSON.stringify(req.body, null, 2));
+        console.log("📩 Received Telegram update");
         const { message } = req.body;
         
-        // Validate message structure
+        // Validate message
         if (!message || !message.text || !message.from) {
             return res.status(200).send("Invalid message format");
         }
 
-        // Extract user info
         const user = message.from;
         const chatId = message.chat.id;
         const text = message.text;
         const firstName = user.first_name || '';
-        const lastName = user.last_name || '';
-        const username = user.username ? `@${user.username}` : '';
 
-        // Create lead from message
+        // Load business data
+        let companyProfile = {};
+        let fleetData = [];
+        let marketFleet = [];
+        
+        try {
+            // Get company profile
+            const profile = await getCollection('company_profile');
+            companyProfile = profile[0] || {};
+            
+            // Get fleet data
+            fleetData = await getCollection('fleet');
+            marketFleet = await getCollection('market_fleet');
+        } catch (error) {
+            console.error("Error loading business data:", error);
+        }
+
+        // Save lead to Firestore
         const leadData = {
-            name: `${firstName} ${lastName}`.trim(),
-            username: username,
+            name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+            username: user.username ? `@${user.username}` : '',
             contact: `tg:${user.id}`,
             message: text,
             source: 'Telegram',
             status: 'new',
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         };
-
-        // Save to Firestore
-        await db.collection('leads').add(leadData);
-        console.log(`New lead created from Telegram: ${leadData.name}`);
-
-        // Send confirmation to user
-        const replyText = `🚗 Thanks for your message, ${firstName || 'there'}! \n\n` +
-                          `We've received your inquiry and will contact you shortly.\n\n` +
-                          `Your inquiry: "${text}"`;
         
-        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        try {
+            await db.collection('leads').add(leadData);
+            console.log(`✅ New lead created: ${leadData.name}`);
+        } catch (error) {
+            console.error("Error saving lead:", error);
+        }
+
+        // Generate AI response
+        let aiResponse = await generateAIResponse(text, companyProfile, fleetData, marketFleet);
+        
+        // Fallback if AI fails
+        if (!aiResponse) {
+            aiResponse = `🚗 Thanks for your message, ${firstName || 'there'}! \n\n` +
+                        `We've received your inquiry and will contact you shortly.\n\n` +
+                        `Your inquiry: "${text}"`;
+        }
+
+        // Add signature
+        aiResponse += `\n\n— ${companyProfile.ai_agent_name || 'Alex'} at ${companyProfile.company_name || 'Prestige Rentals Dubai'}`;
+
+        // Send response to user
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: chatId,
-                text: replyText,
+                text: aiResponse,
                 parse_mode: 'HTML'
             })
         });
 
-        if (!telegramResponse.ok) {
-            const error = await telegramResponse.json();
-            throw new Error(`Telegram API error: ${error.description}`);
-        }
-
         res.status(200).send("Telegram message processed");
     } catch (error) {
-        console.error("Telegram webhook error:", error);
+        console.error("❌ Telegram webhook error:", error);
         res.status(500).send("Error processing Telegram message");
     }
 });
@@ -264,8 +377,7 @@ const setWebhook = async () => {
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`Server listening on port ${PORT}`);
-  console.log(`Telegram bot token: ${TELEGRAM_BOT_TOKEN.substring(0, 12)}...`);
+  console.log(`🚀 Server listening on port ${PORT}`);
   
   // Set webhook on startup
   await setWebhook();
