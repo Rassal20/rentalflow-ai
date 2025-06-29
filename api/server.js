@@ -1,7 +1,7 @@
 /* 
- * RentalFlow AI Server - Production Ready
+ * RentalFlow AI Server - Dashboard Data Fix
  * ---------------------------------------------------------
- * Added health check endpoint and improved port binding
+ * Added proper data serialization for Firestore timestamps
  */
 
 const express = require('express');
@@ -48,7 +48,30 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8098722195:AAHYS_f
 const getCollection = async (collectionName) => {
     if (!db) throw new Error("Database not initialized");
     const snapshot = await db.collection(collectionName).get();
-    return snapshot.empty ? [] : snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.empty ? [] : snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Convert Firestore Timestamps to ISO strings
+        if (data.createdAt && data.createdAt.toDate) {
+            data.createdAt = data.createdAt.toDate().toISOString();
+        }
+        
+        if (data.updatedAt && data.updatedAt.toDate) {
+            data.updatedAt = data.updatedAt.toDate().toISOString();
+        }
+        
+        // Convert nested timestamps in conversation array
+        if (data.conversation && Array.isArray(data.conversation)) {
+            data.conversation = data.conversation.map(msg => {
+                if (msg.timestamp && msg.timestamp.toDate) {
+                    msg.timestamp = msg.timestamp.toDate().toISOString();
+                }
+                return msg;
+            });
+        }
+        
+        return { id: doc.id, ...data };
+    });
 };
 
 // --- HEALTH CHECK ENDPOINT ---
