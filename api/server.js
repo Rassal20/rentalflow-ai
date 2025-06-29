@@ -78,7 +78,8 @@ async function generateAIResponse(userMessage, userState, conversationHistory, c
   }
   
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Use correct model name for Gemini API
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
     
     // Prepare conversation context
     const historyText = conversationHistory.map(msg => 
@@ -187,7 +188,8 @@ async function generateAIResponse(userMessage, userState, conversationHistory, c
     `;
 
     const result = await model.generateContent(prompt);
-    const fullResponse = await result.response.text();
+    const response = await result.response;
+    const fullResponse = response.text();
     console.log("🤖 Raw AI Response:", fullResponse);
 
     // Parse structured response
@@ -477,11 +479,11 @@ app.post('/api/webhook/telegram', express.json(), async (req, res) => {
             };
         }
         
-        // Add user message to conversation
+        // Add user message to conversation with regular timestamp
         leadData.conversation.push({
             role: 'user',
             content: userMessage,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: new Date(),
             document: documentData
         });
         
@@ -568,12 +570,12 @@ app.post('/api/webhook/telegram', express.json(), async (req, res) => {
             leadData.conversation.push({
                 role: 'assistant',
                 content: aiResponse.text,
-                timestamp: admin.firestore.FieldValue.serverTimestamp()
+                timestamp: new Date(),
             });
         }
         
-        // Update lead in Firestore
-        leadData.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+        // Update lead in Firestore with regular timestamp
+        leadData.updatedAt = new Date();
         await leadRef.set(leadData, { merge: true });
         console.log(`✅ Updated lead: ${leadRef.id} with state: ${leadData.state}`);
         
