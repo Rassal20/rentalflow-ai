@@ -5,13 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RentalFlow AI - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style> /* ... same styles as before ... */ </style>
+    <style>
+        [x-cloak] { display: none !important; }
+        .sidebar-link { transition: background-color 0.2s, color 0.2s; }
+        .sidebar-link:hover, .sidebar-link.active { background-color: #4f46e5; color: white; }
+        .stat-card { background-color: #1f2937; border-radius: 0.5rem; padding: 1.5rem; }
+    </style>
 </head>
-<body x-data="appController()" x-init="init()">
-    <!-- The entire HTML structure from your new design goes here -->
-    <!-- The JavaScript below is the new, important part -->
+<body class="bg-gray-900 text-white" x-data="appController()" x-init="init()" x-cloak>
+
+    <div class="flex h-screen">
+        <aside class="w-64 bg-gray-800 p-4 flex flex-col">
+            <div class="flex items-center mb-8">
+                <img :src="companyProfile.logo_url" alt="Logo" class="h-10 w-10 mr-3 rounded-full object-cover">
+                <h1 class="text-xl font-bold" x-text="companyProfile.company_name"></h1>
+            </div>
+            <nav class="flex flex-col space-y-2">
+                <a href="#" @click.prevent="activePage = 'dashboard'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'dashboard'}"><i class="fas fa-tachometer-alt w-6"></i> Dashboard</a>
+                <a href="#" @click.prevent="activePage = 'fleet'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'fleet'}"><i class="fas fa-car w-6"></i> Fleet</a>
+                <a href="#" @click.prevent="activePage = 'leads'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'leads'}"><i class="fas fa-users w-6"></i> Leads</a>
+                <a href="#" @click.prevent="activePage = 'bookings'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'bookings'}"><i class="fas fa-calendar-check w-6"></i> Bookings</a>
+            </nav>
+            <div class="mt-auto">
+                 <p class="text-xs text-gray-500">RentalFlow AI v1.0</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-y-auto">
+
+            <div x-show="activePage === 'dashboard'">
+                <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">Total Vehicles</h3>
+                        <p class="text-4xl font-bold">15</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">Available Now</h3>
+                        <p class="text-4xl font-bold text-green-500">8</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">On Rent</h3>
+                        <p class="text-4xl font-bold text-yellow-500">7</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">New Leads (7 days)</h3>
+                        <p class="text-4xl font-bold">4</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4">Company Profile</h3>
+
+                    <div x-show="!isProfileEditMode">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400">Company Name</label>
+                                <p class="mt-1 text-lg" x-text="companyProfile.company_name"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400">AI Agent Name</label>
+                                <p class="mt-1 text-lg" x-text="companyProfile.ai_agent_name"></p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-400">Logo URL</label>
+                                <p class="mt-1 text-lg truncate" x-text="companyProfile.logo_url"></p>
+                            </div>
+                        </div>
+                        <div class="text-right mt-4">
+                            <button @click="editProfile()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Edit Profile</button>
+                        </div>
+                    </div>
+
+                    <div x-show="isProfileEditMode" x-transition>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="company_name" class="block text-sm font-medium text-gray-300">Company Name</label>
+                                <input type="text" id="company_name" x-model="profileFormData.company_name" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label for="ai_agent_name" class="block text-sm font-medium text-gray-300">AI Agent Name</label>
+                                <input type="text" id="ai_agent_name" x-model="profileFormData.ai_agent_name" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="logo_url" class="block text-sm font-medium text-gray-300">Logo URL</label>
+                                <input type="text" id="logo_url" x-model="profileFormData.logo_url" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                        </div>
+                        <div class="text-right mt-4 space-x-3">
+                            <button @click="cancelProfileEdit()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</button>
+                            <button @click="saveProfile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div x-show="activePage === 'fleet'">
+                <h2 class="text-3xl font-bold mb-6">Fleet Management</h2>
+                <p>Fleet table will be displayed here.</p>
+            </div>
+
+            <div x-show="activePage === 'leads'">
+                <h2 class="text-3xl font-bold mb-6">Leads</h2>
+                 <p>Leads table will be displayed here.</p>
+            </div>
+
+            <div x-show="activePage === 'bookings'">
+                <h2 class="text-3xl font-bold mb-6">Bookings</h2>
+                 <p>Bookings table will be displayed here.</p>
+            </div>
+
+        </main>
+    </div>
+
     <script>
         function appController() {
             return {
@@ -19,48 +128,254 @@
                 activePage: 'dashboard',
                 fleet: [],
                 leads: [],
-                stats: {},
-                companyProfile: { company_name: 'Loading...', logo_url: '' },
-                isModalOpen: false,
-                isEditMode: false,
-                formData: {},
-                
+                companyProfile: { company_name: 'Loading...', logo_url: '', ai_agent_name: 'Agent' },
+                isProfileEditMode: false,
+                profileFormData: {},
+
                 // Methods
                 async init() {
                     await this.loadCompanyProfile();
-                    await this.loadStats();
                     this.$watch('activePage', () => this.handlePageChange());
                 },
                 handlePageChange() {
-                    if (this.activePage === 'fleet') this.loadFleetData();
-                    if (this.activePage === 'leads') this.loadLeadsData();
-                    if (this.activePage === 'dashboard') this.loadStats();
+                    // This will be expanded later
+                    if (this.activePage === 'fleet') console.log('Loading fleet...');
                 },
                 async loadCompanyProfile() {
                     try {
                         const response = await fetch('/api/company-profile');
                         this.companyProfile = await response.json();
-                    } catch (e) { this.companyProfile.company_name = 'Error'; }
+                    } catch (e) { 
+                        this.companyProfile.company_name = 'Error Loading'; 
+                        console.error(e);
+                    }
                 },
-                async loadFleetData() {
+
+                // --- Profile Edit Methods ---
+                editProfile() {
+                    // Copy current profile to form data to avoid changing the display before saving
+                    this.profileFormData = JSON.parse(JSON.stringify(this.companyProfile));
+                    this.isProfileEditMode = true;
+                },
+                cancelProfileEdit() {
+                    this.isProfileEditMode = false;
+                    this.profileFormData = {};
+                },
+                async saveProfile() {
                     try {
-                        const response = await fetch('/api/fleet');
-                        this.fleet = await response.json();
-                    } catch (e) { console.error("Error loading fleet", e); }
+                        const response = await fetch(`/api/company-profile/${this.companyProfile.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.profileFormData)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to save profile.');
+                        }
+
+                        // Update the main profile with the new data
+                        this.companyProfile = JSON.parse(JSON.stringify(this.profileFormData));
+
+                        // Exit edit mode
+                        this.isProfileEditMode = false;
+                        alert('Profile updated successfully!');
+
+                    } catch (e) {
+                        console.error('Error saving profile:', e);
+                        alert('An error occurred. Please try again.');
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentalFlow AI - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        .sidebar-link { transition: background-color 0.2s, color 0.2s; }
+        .sidebar-link:hover, .sidebar-link.active { background-color: #4f46e5; color: white; }
+        .stat-card { background-color: #1f2937; border-radius: 0.5rem; padding: 1.5rem; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white" x-data="appController()" x-init="init()" x-cloak>
+
+    <div class="flex h-screen">
+        <aside class="w-64 bg-gray-800 p-4 flex flex-col">
+            <div class="flex items-center mb-8">
+                <img :src="companyProfile.logo_url" alt="Logo" class="h-10 w-10 mr-3 rounded-full object-cover">
+                <h1 class="text-xl font-bold" x-text="companyProfile.company_name"></h1>
+            </div>
+            <nav class="flex flex-col space-y-2">
+                <a href="#" @click.prevent="activePage = 'dashboard'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'dashboard'}"><i class="fas fa-tachometer-alt w-6"></i> Dashboard</a>
+                <a href="#" @click.prevent="activePage = 'fleet'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'fleet'}"><i class="fas fa-car w-6"></i> Fleet</a>
+                <a href="#" @click.prevent="activePage = 'leads'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'leads'}"><i class="fas fa-users w-6"></i> Leads</a>
+                <a href="#" @click.prevent="activePage = 'bookings'" class="sidebar-link p-2 rounded-md" :class="{'active': activePage === 'bookings'}"><i class="fas fa-calendar-check w-6"></i> Bookings</a>
+            </nav>
+            <div class="mt-auto">
+                 <p class="text-xs text-gray-500">RentalFlow AI v1.0</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-y-auto">
+
+            <div x-show="activePage === 'dashboard'">
+                <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">Total Vehicles</h3>
+                        <p class="text-4xl font-bold">15</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">Available Now</h3>
+                        <p class="text-4xl font-bold text-green-500">8</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">On Rent</h3>
+                        <p class="text-4xl font-bold text-yellow-500">7</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-gray-400">New Leads (7 days)</h3>
+                        <p class="text-4xl font-bold">4</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-gray-800 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4">Company Profile</h3>
+
+                    <div x-show="!isProfileEditMode">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400">Company Name</label>
+                                <p class="mt-1 text-lg" x-text="companyProfile.company_name"></p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400">AI Agent Name</label>
+                                <p class="mt-1 text-lg" x-text="companyProfile.ai_agent_name"></p>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-400">Logo URL</label>
+                                <p class="mt-1 text-lg truncate" x-text="companyProfile.logo_url"></p>
+                            </div>
+                        </div>
+                        <div class="text-right mt-4">
+                            <button @click="editProfile()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Edit Profile</button>
+                        </div>
+                    </div>
+
+                    <div x-show="isProfileEditMode" x-transition>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="company_name" class="block text-sm font-medium text-gray-300">Company Name</label>
+                                <input type="text" id="company_name" x-model="profileFormData.company_name" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label for="ai_agent_name" class="block text-sm font-medium text-gray-300">AI Agent Name</label>
+                                <input type="text" id="ai_agent_name" x-model="profileFormData.ai_agent_name" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="logo_url" class="block text-sm font-medium text-gray-300">Logo URL</label>
+                                <input type="text" id="logo_url" x-model="profileFormData.logo_url" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                        </div>
+                        <div class="text-right mt-4 space-x-3">
+                            <button @click="cancelProfileEdit()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Cancel</button>
+                            <button @click="saveProfile()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Changes</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div x-show="activePage === 'fleet'">
+                <h2 class="text-3xl font-bold mb-6">Fleet Management</h2>
+                <p>Fleet table will be displayed here.</p>
+            </div>
+
+            <div x-show="activePage === 'leads'">
+                <h2 class="text-3xl font-bold mb-6">Leads</h2>
+                 <p>Leads table will be displayed here.</p>
+            </div>
+
+            <div x-show="activePage === 'bookings'">
+                <h2 class="text-3xl font-bold mb-6">Bookings</h2>
+                 <p>Bookings table will be displayed here.</p>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function appController() {
+            return {
+                // State
+                activePage: 'dashboard',
+                fleet: [],
+                leads: [],
+                companyProfile: { company_name: 'Loading...', logo_url: '', ai_agent_name: 'Agent' },
+                isProfileEditMode: false,
+                profileFormData: {},
+
+                // Methods
+                async init() {
+                    await this.loadCompanyProfile();
+                    this.$watch('activePage', () => this.handlePageChange());
                 },
-                async loadLeadsData() {
+                handlePageChange() {
+                    // This will be expanded later
+                    if (this.activePage === 'fleet') console.log('Loading fleet...');
+                },
+                async loadCompanyProfile() {
                     try {
-                        const response = await fetch('/api/leads');
-                        this.leads = await response.json();
-                    } catch (e) { console.error("Error loading leads", e); }
+                        const response = await fetch('/api/company-profile');
+                        this.companyProfile = await response.json();
+                    } catch (e) { 
+                        this.companyProfile.company_name = 'Error Loading'; 
+                        console.error(e);
+                    }
                 },
-                async loadStats() {
+
+                // --- Profile Edit Methods ---
+                editProfile() {
+                    // Copy current profile to form data to avoid changing the display before saving
+                    this.profileFormData = JSON.parse(JSON.stringify(this.companyProfile));
+                    this.isProfileEditMode = true;
+                },
+                cancelProfileEdit() {
+                    this.isProfileEditMode = false;
+                    this.profileFormData = {};
+                },
+                async saveProfile() {
                     try {
-                        const response = await fetch('/api/dashboard-stats');
-                        this.stats = await response.json();
-                    } catch (e) { console.error("Error loading stats", e); }
-                },
-                // ... All other methods for Modal, Delete, Save, etc. go here ...
+                        const response = await fetch(`/api/company-profile/${this.companyProfile.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.profileFormData)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to save profile.');
+                        }
+
+                        // Update the main profile with the new data
+                        this.companyProfile = JSON.parse(JSON.stringify(this.profileFormData));
+
+                        // Exit edit mode
+                        this.isProfileEditMode = false;
+                        alert('Profile updated successfully!');
+
+                    } catch (e) {
+                        console.error('Error saving profile:', e);
+                        alert('An error occurred. Please try again.');
+                    }
+                }
             };
         }
     </script>
