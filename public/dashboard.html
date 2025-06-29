@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentalFlow AI - Fleet Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="font-sans">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">RentalFlow AI Dashboard</h1>
+            <p class="text-gray-600 mt-1">Live Inventory Management</p>
+        </header>
+
+        <!-- Fleet Table -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-800 text-white">
+                        <tr>
+                            <th class="p-4 font-semibold">Model</th>
+                            <th class="p-4 font-semibold">Status</th>
+                            <th class="p-4 font-semibold">Daily Rate (AED)</th>
+                            <th class="p-4 font-semibold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fleet-table-body" class="divide-y divide-gray-200">
+                        <!-- Data will be loaded here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/fleet';
+
+        async function loadFleetData() {
+            const tableBody = document.getElementById('fleet-table-body');
+            try {
+                // This will fetch from your live Vercel API once deployed
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`API returned an error: ${response.status} ${response.statusText}`);
+                }
+                const fleet = await response.json();
+
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                if (fleet.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-gray-500">No vehicles found in the database. Please seed your Firestore database.</td></tr>`;
+                    return;
+                }
+
+                fleet.forEach(car => {
+                    const row = document.createElement('tr');
+                    
+                    let statusColorClass = 'bg-gray-400';
+                    if (car.status === 'Available') statusColorClass = 'bg-green-500';
+                    else if (car.status === 'On Rent') statusColorClass = 'bg-red-500';
+                    else if (car.status === 'Cleaning') statusColorClass = 'bg-yellow-500';
+
+                    row.innerHTML = `
+                        <td class="p-4">
+                            <div class="font-bold">${car.model || 'N/A'}</div>
+                            <div class="text-sm text-gray-500">${car.category || 'N/A'}</div>
+                        </td>
+                        <td class="p-4">
+                            <span class="px-3 py-1 text-xs text-white rounded-full ${statusColorClass}">
+                                ${car.status || 'N/A'}
+                            </span>
+                        </td>
+                        <td class="p-4">${car.pricing?.daily?.min_rate || 'N/A'} - ${car.pricing?.daily?.max_rate || 'N/A'}</td>
+                        <td class="p-4">
+                            <button class="text-blue-600 hover:underline mr-4" disabled>Edit</button>
+                            <button class="text-red-600 hover:underline" disabled>Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Failed to load fleet data:', error);
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500"><strong>Error:</strong> Could not load fleet data. Please check the server logs.</td></tr>`;
+            }
+        }
+
+        // Load the data when the page is ready
+        document.addEventListener('DOMContentLoaded', loadFleetData);
+    </script>
+</body>
+</html>
