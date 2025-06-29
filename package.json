@@ -1,7 +1,7 @@
 {
   "name": "rentalflow-ai-live",
-  "version": "1.2.0",
-  "description": "AI-Powered Rental Management with Gemini Integration",
+  "version": "1.3.0",
+  "description": "AI-Powered Rental Management with Gemini Flash",
   "main": "api/server.js",
   "scripts": {
     "start": "node api/server.js"
