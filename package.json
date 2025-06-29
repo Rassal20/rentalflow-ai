@@ -1,13 +1,15 @@
 {
   "name": "rentalflow-ai-live",
-  "version": "1.0.0",
-  "description": "Live AI Bot and Fleet Management Dashboard",
+  "version": "1.1.0",
+  "description": "Live AI Bot and Fleet Management Dashboard with Telegram Integration",
   "main": "api/server.js",
   "scripts": {
     "start": "node api/server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "firebase-admin": "^12.1.0"
+    "express": "^5.1.0",
+    "firebase-admin": "^13.4.0",
+    "node-telegram-bot-api": "^0.65.0",
+    "node-fetch": "^2.7.0"
   }
 }

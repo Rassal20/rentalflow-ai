@@ -8,7 +8,7 @@
 const express = require('express');
 const admin = require('firebase-admin');
 const path = require('path');
-const fs = require('fs').promises; // Only used for the one-time database seeder
+const fetch = require('node-fetch');
 const app = express();
 
 // --- INITIALIZE FIREBASE ADMIN (SECURE RENDER/VERCEL METHOD) ---
@@ -31,11 +31,8 @@ try {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-
 // --- CONFIGURATION ---
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8098722195:AAHYS_feh9J7iN2EkpjLla4ULfocdYEXctg';
 
 // --- DATABASE HELPER FUNCTIONS (FIRESTORE) ---
 const getCollection = async (collectionName) => {
@@ -45,12 +42,10 @@ const getCollection = async (collectionName) => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-
 // --- PAGE SERVING ROUTE ---
 app.get(['/', '/dashboard.html'], (req, res) => {
     res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
-
 
 // --- API ENDPOINTS for the DASHBOARD ---
 
@@ -157,21 +152,100 @@ app.post('/api/bookings', async (req, res) => {
     }
 });
 
-
-// --- ONE-TIME DATABASE SEEDER ---
-app.get('/api/seed-database', async (req, res) => {
-    // ... Seeder code remains the same ...
+// LEADS ENDPOINTS
+app.get('/api/leads', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const leads = await getCollection('leads');
+        res.status(200).json(leads);
+    } catch (e) {
+        console.error("Error fetching leads:", e);
+        res.status(500).json({ message: "Error fetching leads" });
+    }
 });
 
-
-// --- AI & TELEGRAM LOGIC ---
-app.post('/api/webhook/telegram', (req, res) => {
-    res.status(200).send("Telegram webhook is connected.");
+app.post('/api/leads', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const newLead = {
+            ...req.body,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            status: 'new'
+        };
+        const docRef = await db.collection('leads').add(newLead);
+        console.log(`New lead added with ID: ${docRef.id}`);
+        res.status(201).json({ message: 'Lead added successfully!', leadId: docRef.id });
+    } catch (error) {
+        console.error("Error adding lead:", error);
+        res.status(500).json({ message: "Failed to add lead", error: error.message });
+    }
 });
 
+// --- TELEGRAM BOT LOGIC ---
+app.post('/api/webhook/telegram', express.json(), async (req, res) => {
+    try {
+        console.log("Received Telegram update:", JSON.stringify(req.body, null, 2));
+        const { message } = req.body;
+        
+        // Validate message structure
+        if (!message || !message.text || !message.from) {
+            return res.status(200).send("Invalid message format");
+        }
+
+        // Extract user info
+        const user = message.from;
+        const chatId = message.chat.id;
+        const text = message.text;
+        const firstName = user.first_name || '';
+        const lastName = user.last_name || '';
+        const username = user.username ? `@${user.username}` : '';
+
+        // Create lead from message
+        const leadData = {
+            name: `${firstName} ${lastName}`.trim(),
+            username: username,
+            contact: `tg:${user.id}`,
+            message: text,
+            source: 'Telegram',
+            status: 'new',
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Save to Firestore
+        await db.collection('leads').add(leadData);
+        console.log(`New lead created from Telegram: ${leadData.name}`);
+
+        // Send confirmation to user
+        const replyText = `🚗 Thanks for your message, ${firstName || 'there'}! \n\n` +
+                          `We've received your inquiry and will contact you shortly.\n\n` +
+                          `Your inquiry: "${text}"`;
+        
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: replyText,
+                parse_mode: 'HTML'
+            })
+        });
+
+        if (!telegramResponse.ok) {
+            const error = await telegramResponse.json();
+            throw new Error(`Telegram API error: ${error.description}`);
+        }
+
+        res.status(200).send("Telegram message processed");
+    } catch (error) {
+        console.error("Telegram webhook error:", error);
+        res.status(500).send("Error processing Telegram message");
+    }
+});
 
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on port ${PORT}`);
+  console.log(`Telegram bot ready with token: ${TELEGRAM_BOT_TOKEN.substring(0, 12)}...`);
+  console.log(`Telegram webhook: https://rentalflow-ai.onrender.com/api/webhook/telegram`);
 });
