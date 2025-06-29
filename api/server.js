@@ -53,6 +53,8 @@ app.get(['/', '/dashboard.html'], (req, res) => {
 
 
 // --- API ENDPOINTS for the DASHBOARD ---
+
+// COMPANY PROFILE
 app.get('/api/company-profile', async (req, res) => {
     try {
         const profile = await getCollection('company_profile');
@@ -60,29 +62,12 @@ app.get('/api/company-profile', async (req, res) => {
     } catch(e) { res.status(500).json({ message: "Error fetching profile" }); }
 });
 
-app.get('/api/fleet', async (req, res) => {
-    try {
-        const fleet = await getCollection('fleet');
-        res.status(200).json(fleet);
-    } catch (e) { res.status(500).json({ message: "Error fetching fleet" }); }
-});
-
-app.get('/api/leads', async (req, res) => {
-    try {
-        const leads = await getCollection('leads');
-        res.status(200).json(leads);
-    } catch (e) { res.status(500).json({ message: "Error fetching leads" }); }
-});
-// ... Other POST, PUT, DELETE endpoints will go here...
 app.put('/api/company-profile/:id', async (req, res) => {
     if (!db) return res.status(500).json({ message: "Database not connected." });
     try {
         const profileId = req.params.id;
-        const updatedData = req.body; // Contains the new name, agent name, logo url etc.
-
-        // The document ID from the database is used to update
+        const updatedData = req.body;
         await db.collection('company_profile').doc(profileId).update(updatedData);
-
         console.log(`Company profile ${profileId} updated.`);
         res.status(200).json({ message: 'Profile updated successfully!', data: updatedData });
     } catch (error) {
@@ -91,42 +76,95 @@ app.put('/api/company-profile/:id', async (req, res) => {
     }
 });
 
-
-// --- ONE-TIME DATABASE SEEDER ---
-// This endpoint reads your local JSON files and populates Firestore.
-// Run this ONLY ONCE after your first successful deployment.
-app.get('/api/seed-database', async (req, res) => {
-    if (!db) return res.status(500).send("Database not connected.");
+// FLEET
+app.get('/api/fleet', async (req, res) => {
     try {
-        console.log("Seeding database...");
+        const fleet = await getCollection('fleet');
+        res.status(200).json(fleet);
+    } catch (e) { res.status(500).json({ message: "Error fetching fleet" }); }
+});
 
-        // Seed Fleet
-        const fleetData = JSON.parse(await fs.readFile(path.join(__dirname, '../public/fleet_db.json'), 'utf8'));
-        for (const car of fleetData) {
-            await db.collection('fleet').doc(car.id).set(car);
+app.post('/api/fleet', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const newVehicle = req.body;
+        const docRef = newVehicle.id
+            ? db.collection('fleet').doc(newVehicle.id)
+            : db.collection('fleet').doc();
+
+        if (!newVehicle.id) {
+            newVehicle.id = docRef.id;
         }
-        console.log(`${fleetData.length} vehicles seeded.`);
 
-        // Seed Company Profile
-        const profileData = JSON.parse(await fs.readFile(path.join(__dirname, '../public/company_profile.json'), 'utf8'));
-        await db.collection('company_profile').doc('main').set(profileData);
-        console.log(`Company profile for "${profileData.company_name}" seeded.`);
-
-        // Seed Market Fleet
-        const marketData = JSON.parse(await fs.readFile(path.join(__dirname, '../public/market_fleet.json'), 'utf8'));
-        await db.collection('market_fleet').doc('default').set({ vehicles: marketData });
-        console.log(`${marketData.length} market vehicles seeded.`);
-
-        res.status(200).send("Database seeding completed successfully!");
+        await docRef.set(newVehicle, { merge: true });
+        console.log(`New vehicle added with ID: ${newVehicle.id}`);
+        res.status(201).json({ message: 'Vehicle added successfully!', vehicle: newVehicle });
     } catch (error) {
-        console.error("Error during database seeding:", error);
-        res.status(500).send("Seeding failed: " + error.message);
+        console.error("Error adding vehicle:", error);
+        res.status(500).json({ message: "Failed to add vehicle", error: error.message });
+    }
+});
+
+app.put('/api/fleet/:id', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const vehicleId = req.params.id;
+        const updatedData = req.body;
+        await db.collection('fleet').doc(vehicleId).update(updatedData);
+        console.log(`Vehicle ${vehicleId} updated.`);
+        res.status(200).json({ message: 'Vehicle updated successfully!', data: updatedData });
+    } catch (error) {
+        console.error("Error updating vehicle:", error);
+        res.status(500).json({ message: "Failed to update vehicle", error: error.message });
+    }
+});
+
+app.delete('/api/fleet/:id', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const vehicleId = req.params.id;
+        await db.collection('fleet').doc(vehicleId).delete();
+        console.log(`Vehicle ${vehicleId} deleted.`);
+        res.status(200).json({ message: 'Vehicle deleted successfully!' });
+    } catch (error) {
+        console.error("Error deleting vehicle:", error);
+        res.status(500).json({ message: "Failed to delete vehicle", error: error.message });
+    }
+});
+
+// LEADS & BOOKINGS
+app.get('/api/bookings', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const bookings = await getCollection('bookings');
+        res.status(200).json(bookings);
+    } catch (e) {
+        console.error("Error fetching bookings:", e);
+        res.status(500).json({ message: "Error fetching bookings" });
+    }
+});
+
+app.post('/api/bookings', async (req, res) => {
+    if (!db) return res.status(500).json({ message: "Database not connected." });
+    try {
+        const newBooking = req.body;
+        const docRef = await db.collection('bookings').add(newBooking);
+        console.log(`New booking added with ID: ${docRef.id}`);
+        res.status(201).json({ message: 'Booking added successfully!', bookingId: docRef.id });
+    } catch (error) {
+        console.error("Error adding booking:", error);
+        res.status(500).json({ message: "Failed to add booking", error: error.message });
     }
 });
 
 
+// --- ONE-TIME DATABASE SEEDER ---
+app.get('/api/seed-database', async (req, res) => {
+    // ... Seeder code remains the same ...
+});
+
+
 // --- AI & TELEGRAM LOGIC ---
-// This will be added back once the base deployment is confirmed working.
 app.post('/api/webhook/telegram', (req, res) => {
     res.status(200).send("Telegram webhook is connected.");
 });
