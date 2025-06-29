@@ -242,10 +242,31 @@ app.post('/api/webhook/telegram', express.json(), async (req, res) => {
     }
 });
 
+// --- SET WEBHOOK ON STARTUP ---
+const setWebhook = async () => {
+    try {
+        const webhookUrl = `https://rentalflow-ai.onrender.com/api/webhook/telegram`;
+        const response = await fetch(
+            `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook?url=${webhookUrl}`
+        );
+        
+        const result = await response.json();
+        if (result.ok) {
+            console.log(`✅ Webhook set successfully to: ${webhookUrl}`);
+        } else {
+            console.error('❌ Failed to set webhook:', result.description);
+        }
+    } catch (error) {
+        console.error('Error setting webhook:', error);
+    }
+};
+
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server listening on port ${PORT}`);
-  console.log(`Telegram bot ready with token: ${TELEGRAM_BOT_TOKEN.substring(0, 12)}...`);
-  console.log(`Telegram webhook: https://rentalflow-ai.onrender.com/api/webhook/telegram`);
+  console.log(`Telegram bot token: ${TELEGRAM_BOT_TOKEN.substring(0, 12)}...`);
+  
+  // Set webhook on startup
+  await setWebhook();
 });
