@@ -3,197 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RentalFlow AI - Fleet Dashboard</title>
+    <title>RentalFlow AI - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #f3f4f6; }
-        .modal-overlay { transition: opacity 0.3s ease; }
-        .modal-container { transition: transform 0.3s ease; }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style> /* ... same styles as before ... */ </style>
 </head>
-<body class="font-sans">
-
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Header -->
-        <header class="mb-8 flex justify-between items-center">
-            <div>
-                <h1 class="text-4xl font-bold text-gray-800">RentalFlow AI Dashboard</h1>
-                <p class="text-gray-600 mt-1">Live Inventory Management</p>
-            </div>
-            <button id="add-vehicle-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors">
-                + Add Vehicle
-            </button>
-        </header>
-
-        <!-- Fleet Table -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-800 text-white">
-                        <tr>
-                            <th class="p-4 font-semibold">Model</th>
-                            <th class="p-4 font-semibold">Status</th>
-                            <th class="p-4 font-semibold">Daily Rate (AED)</th>
-                            <th class="p-4 font-semibold">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fleet-table-body" class="divide-y divide-gray-200">
-                        <!-- Data will be loaded here by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add/Edit Vehicle Modal -->
-    <div id="vehicle-modal" class="fixed inset-0 bg-black bg-opacity-50 modal-overlay flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto modal-container transform scale-95">
-            <h2 id="modal-title" class="text-2xl font-bold mb-6 text-gray-800">Add New Vehicle</h2>
-            <form id="vehicle-form">
-                <input type="hidden" id="car-id">
-                
-                <!-- Main Details -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <input type="text" id="model" placeholder="Model (e.g., Toyota Corolla)" required class="p-3 border rounded-lg">
-                    <input type="text" id="category" placeholder="Category (e.g., Compact Sedan)" required class="p-3 border rounded-lg">
-                    <input type="text" id="color" placeholder="Color" required class="p-3 border rounded-lg">
-                    <select id="status" class="p-3 border rounded-lg">
-                        <option value="Available">Available</option>
-                        <option value="On Rent">On Rent</option>
-                        <option value="Cleaning">Cleaning</option>
-                        <option value="Maintenance">Maintenance</option>
-                    </select>
-                </div>
-                <!-- ... other form fields ... -->
-
-                <div class="flex justify-end gap-4 mt-8">
-                    <button type="button" id="cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
-                    <button type="submit" id="save-btn" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors">Save Vehicle</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+<body x-data="appController()" x-init="init()">
+    <!-- The entire HTML structure from your new design goes here -->
+    <!-- The JavaScript below is the new, important part -->
     <script>
-        const API_URL = '/api/fleet';
-        const tableBody = document.getElementById('fleet-table-body');
-        const modal = document.getElementById('vehicle-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const form = document.getElementById('vehicle-form');
-        let fleetCache = []; // A local cache of the fleet data
-
-        // --- EVENT LISTENERS ---
-        document.getElementById('add-vehicle-btn').addEventListener('click', () => openModal());
-        document.getElementById('cancel-btn').addEventListener('click', () => closeModal());
-        form.addEventListener('submit', handleFormSubmit);
-
-        // --- CORE FUNCTIONS ---
-
-        // Load and display all vehicles in the table
-        async function loadFleetData() {
-            try {
-                const response = await fetch(API_URL);
-                fleetCache = await response.json();
+        function appController() {
+            return {
+                // State
+                activePage: 'dashboard',
+                fleet: [],
+                leads: [],
+                stats: {},
+                companyProfile: { company_name: 'Loading...', logo_url: '' },
+                isModalOpen: false,
+                isEditMode: false,
+                formData: {},
                 
-                tableBody.innerHTML = '';
-                fleetCache.forEach(car => {
-                    const row = document.createElement('tr');
-                    let statusColorClass = 'bg-gray-400';
-                    if (car.status === 'Available') statusColorClass = 'bg-green-500';
-                    else if (car.status === 'On Rent') statusColorClass = 'bg-red-500';
-
-                    row.innerHTML = `
-                        <td class="p-4"><div class="font-bold">${car.model}</div><div class="text-sm text-gray-500">${car.category}</div></td>
-                        <td class="p-4"><span class="px-3 py-1 text-xs text-white rounded-full ${statusColorClass}">${car.status}</span></td>
-                        <td class="p-4">${car.pricing?.daily?.min_rate || 'N/A'} - ${car.pricing?.daily?.max_rate || 'N/A'}</td>
-                        <td class="p-4">
-                            <button onclick="openModal('${car.id}')" class="text-blue-600 hover:underline mr-4">Edit</button>
-                            <button onclick="deleteVehicle('${car.id}')" class="text-red-600 hover:underline">Delete</button>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            } catch (error) {
-                tableBody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500">Error loading fleet data.</td></tr>`;
-            }
-        }
-
-        // Open the modal for adding or editing
-        function openModal(carId = null) {
-            form.reset();
-            document.getElementById('car-id').value = '';
-            
-            if (carId) { // Edit mode
-                modalTitle.textContent = 'Edit Vehicle';
-                const car = fleetCache.find(c => c.id === carId);
-                if (car) {
-                    // Populate the form with existing data
-                    document.getElementById('car-id').value = car.id;
-                    document.getElementById('model').value = car.model;
-                    document.getElementById('category').value = car.category;
-                    document.getElementById('color').value = car.color;
-                    document.getElementById('status').value = car.status;
-                    // ... populate other fields like specs, tags, pricing, etc.
-                }
-            } else { // Add mode
-                modalTitle.textContent = 'Add New Vehicle';
-            }
-            
-            modal.classList.remove('hidden');
-        }
-
-        // Close the modal
-        function closeModal() {
-             modal.classList.add('hidden');
-        }
-
-        // Handle form submission for both Add and Edit
-        async function handleFormSubmit(event) {
-            event.preventDefault();
-            const carId = document.getElementById('car-id').value;
-            const carData = {
-                model: document.getElementById('model').value,
-                category: document.getElementById('category').value,
-                color: document.getElementById('color').value,
-                status: document.getElementById('status').value,
-                // ... gather other form fields
+                // Methods
+                async init() {
+                    await this.loadCompanyProfile();
+                    await this.loadStats();
+                    this.$watch('activePage', () => this.handlePageChange());
+                },
+                handlePageChange() {
+                    if (this.activePage === 'fleet') this.loadFleetData();
+                    if (this.activePage === 'leads') this.loadLeadsData();
+                    if (this.activePage === 'dashboard') this.loadStats();
+                },
+                async loadCompanyProfile() {
+                    try {
+                        const response = await fetch('/api/company-profile');
+                        this.companyProfile = await response.json();
+                    } catch (e) { this.companyProfile.company_name = 'Error'; }
+                },
+                async loadFleetData() {
+                    try {
+                        const response = await fetch('/api/fleet');
+                        this.fleet = await response.json();
+                    } catch (e) { console.error("Error loading fleet", e); }
+                },
+                async loadLeadsData() {
+                    try {
+                        const response = await fetch('/api/leads');
+                        this.leads = await response.json();
+                    } catch (e) { console.error("Error loading leads", e); }
+                },
+                async loadStats() {
+                    try {
+                        const response = await fetch('/api/dashboard-stats');
+                        this.stats = await response.json();
+                    } catch (e) { console.error("Error loading stats", e); }
+                },
+                // ... All other methods for Modal, Delete, Save, etc. go here ...
             };
-
-            const url = carId ? `${API_URL}/${carId}` : API_URL;
-            const method = carId ? 'PUT' : 'POST';
-
-            try {
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(carData)
-                });
-                if (!response.ok) throw new Error('Failed to save vehicle');
-                
-                closeModal();
-                loadFleetData(); // Refresh the table
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-            }
         }
-
-        // Delete a vehicle
-        async function deleteVehicle(carId) {
-            if (!confirm('Are you sure you want to delete this vehicle?')) {
-                return;
-            }
-            try {
-                const response = await fetch(`${API_URL}/${carId}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error('Failed to delete vehicle');
-                
-                loadFleetData(); // Refresh the table
-            } catch (error) {
-                 alert(`Error: ${error.message}`);
-            }
-        }
-
-        // Initial load
-        document.addEventListener('DOMContentLoaded', loadFleetData);
     </script>
 </body>
 </html>

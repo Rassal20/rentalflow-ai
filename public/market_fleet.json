@@ -1,0 +1,18 @@
+[
+  {
+    "model": "Lamborghini Urus",
+    "category": "Super SUV"
+  },
+  {
+    "model": "Rolls-Royce Cullinan",
+    "category": "Ultra-Luxury SUV"
+  },
+  {
+    "model": "Ferrari 296 GTB",
+    "category": "Exotic Sports Car"
+  },
+  {
+    "model": "Range Rover Vogue",
+    "category": "Luxury SUV"
+  }
+]

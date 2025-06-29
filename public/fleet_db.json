@@ -1,0 +1,79 @@
+[
+  {
+    "id": "corolla01",
+    "model": "Toyota Corolla",
+    "category": "Compact Sedan",
+    "year": 2023,
+    "color": "White",
+    "tags": ["Economical", "Sedan", "Reliable"],
+    "specs": "5 seats, good for 2 suitcases, excellent fuel economy.",
+    "status": "Available",
+    "pricing": {
+      "daily": { "min_rate": 100, "max_rate": 120 },
+      "weekly": { "min_rate": 650, "max_rate": 750 },
+      "monthly": { "min_rate": 2500, "max_rate": 2800 }
+    },
+    "security_deposit": {
+      "refundable": 1000,
+      "non_refundable_option": 500
+    }
+  },
+  {
+    "id": "explorer01",
+    "model": "Ford Explorer",
+    "category": "Standard SUV",
+    "year": 2022,
+    "color": "Black",
+    "tags": ["SUV", "Family", "Spacious"],
+    "specs": "7 seats, very large trunk, all-wheel drive.",
+    "status": "Available",
+    "pricing": {
+      "daily": { "min_rate": 250, "max_rate": 300 },
+      "weekly": { "min_rate": 1600, "max_rate": 1800 },
+      "monthly": { "min_rate": 5500, "max_rate": 6000 }
+    },
+    "security_deposit": {
+      "refundable": 2000,
+      "non_refundable_option": 1000
+    }
+  },
+  {
+    "id": "cclass01",
+    "model": "Mercedes-Benz C-Class",
+    "category": "Luxury Sedan",
+    "year": 2024,
+    "color": "Silver",
+    "tags": ["Luxury", "Sedan", "Business", "Comfort"],
+    "specs": "5 seats, premium leather interior, smooth ride.",
+    "status": "On Rent",
+    "next_available_date": "2025-07-15",
+    "pricing": {
+      "daily": { "min_rate": 350, "max_rate": 450 },
+      "weekly": { "min_rate": 2300, "max_rate": 2600 },
+      "monthly": { "min_rate": 8000, "max_rate": 9000 }
+    },
+    "security_deposit": {
+      "refundable": 2500,
+      "non_refundable_option": 1250
+    }
+  },
+  {
+    "id": "mustang01",
+    "model": "Ford Mustang Convertible",
+    "category": "Sports Convertible",
+    "year": 2023,
+    "color": "Yellow",
+    "tags": ["Sports Car", "Convertible", "Fun"],
+    "specs": "4 seats, powerful V8 engine, perfect for enjoying the weather.",
+    "status": "Available",
+    "pricing": {
+      "daily": { "min_rate": 400, "max_rate": 500 },
+      "weekly": { "min_rate": 2500, "max_rate": 3000 },
+      "monthly": { "min_rate": 9000, "max_rate": 11000 }
+    },
+    "security_deposit": {
+      "refundable": 3000,
+      "non_refundable_option": 1500
+    }
+  }
+]
