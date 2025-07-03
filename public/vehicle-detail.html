@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" x-data="vehicleController()" x-init="loadVehicle()">
+<head>
+    <!-- Same head as dashboard.html -->
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Vehicle Details</h1>
+            <button @click="goBack()" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded">
+                &larr; Back to Fleet
+            </button>
+        </div>
+        
+        <!-- Vehicle Info -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <h2 class="text-xl font-semibold mb-2" x-text="vehicle.model"></h2>
+                    <p class="text-gray-400" x-text="vehicle.category"></p>
+                </div>
+                
+                <div>
+                    <p><span class="text-gray-400">Plate:</span> <span x-text="vehicle.plateNumber || 'N/A'"></span></p>
+                    <p><span class="text-gray-400">Color:</span> <span x-text="vehicle.color"></span></p>
+                    <p><span class="text-gray-400">Mileage:</span> <span x-text="vehicle.currentMileage || '0'"></span> km</p>
+                </div>
+                
+                <div>
+                    <p><span class="text-gray-400">Status:</span> 
+                        <span :class="{
+                            'text-green-500': vehicle.status === 'Available',
+                            'text-yellow-500': vehicle.status === 'On Rent',
+                            'text-red-500': vehicle.status === 'Maintenance'
+                        }" x-text="vehicle.status"></span>
+                    </p>
+                    <p><span class="text-gray-400">Last Maintained:</span> 
+                        <span x-text="vehicle.lastMaintained ? 
+                            new Date(vehicle.lastMaintained.seconds * 1000).toLocaleDateString() : 'Never'"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Maintenance History -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Maintenance History</h2>
+                <button @click="openMaintenanceModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded">
+                    + Add Maintenance
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-700">
+                        <tr>
+                            <th class="py-2 px-4 text-left">Date</th>
+                            <th class="py-2 px-4 text-left">Type</th>
+                            <th class="py-2 px-4 text-left">Description</th>
+                            <th class="py-2 px-4 text-left">Cost</th>
+                            <th class="py-2 px-4 text-left">Mileage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="record in maintenance" :key="record.id">
+                            <tr class="border-b border-gray-700">
+                                <td class="py-2 px-4" x-text="new Date(record.date.seconds * 1000).toLocaleDateString()"></td>
+                                <td class="py-2 px-4" x-text="record.type"></td>
+                                <td class="py-2 px-4" x-text="record.description"></td>
+                                <td class="py-2 px-4" x-text="'AED ' + record.cost.toFixed(2)"></td>
+                                <td class="py-2 px-4" x-text="record.mileage + ' km'"></td>
+                            </tr>
+                        </template>
+                        <template x-if="maintenance.length === 0">
+                            <tr>
+                                <td colspan="5" class="py-4 px-4 text-center text-gray-500">No maintenance records found</td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Maintenance Modal -->
+    <div x-show="isMaintenanceModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg w-full max-w-md p-6">
+            <h2 class="text-2xl font-bold mb-4">Add Maintenance Record</h2>
+            
+            <form @submit.prevent="addMaintenance">
+                <div class="mb-4">
+                    <label class="block mb-2">Maintenance Type</label>
+                    <select x-model="newMaintenance.type" class="w-full bg-gray-700 rounded p-2" required>
+                        <option value="Oil Change">Oil Change</option>
+                        <option value="Tire Rotation">Tire Rotation</option>
+                        <option value="Brake Service">Brake Service</option>
+                        <option value="Engine Check">Engine Check</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-2">Date</label>
+                    <input type="date" x-model="newMaintenance.date" class="w-full bg-gray-700 rounded p-2" required>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-2">Description</label>
+                    <textarea x-model="newMaintenance.description" class="w-full bg-gray-700 rounded p-2" required></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block mb-2">Cost (AED)</label>
+                        <input type="number" x-model="newMaintenance.cost" min="0" step="0.01"
+                               class="w-full bg-gray-700 rounded p-2" required>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Mileage (km)</label>
+                        <input type="number" x-model="newMaintenance.mileage" min="0"
+                               class="w-full bg-gray-700 rounded p-2" required>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" @click="isMaintenanceModalOpen = false" 
+                            class="bg-gray-600 px-4 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-indigo-600 px-4 py-2 rounded">
+                        Save Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function vehicleController() {
+            return {
+                vehicleId: new URLSearchParams(window.location.search).get('id'),
+                vehicle: {},
+                maintenance: [],
+                isMaintenanceModalOpen: false,
+                newMaintenance: {
+                    type: 'Oil Change',
+                    date: new Date().toISOString().split('T')[0],
+                    description: '',
+                    cost: 0,
+                    mileage: 0
+                },
+                
+                async loadVehicle() {
+                    if (!this.vehicleId) return;
+                    
+                    try {
+                        const response = await fetch(`/api/fleet/${this.vehicleId}`);
+                        this.vehicle = await response.json();
+                        this.loadMaintenance();
+                    } catch (error) {
+                        console.error('Error loading vehicle:', error);
+                    }
+                },
+                
+                async loadMaintenance() {
+                    try {
+                        const response = await fetch(`/api/maintenance?vehicleId=${this.vehicleId}`);
+                        this.maintenance = await response.json();
+                    } catch (error) {
+                        console.error('Error loading maintenance:', error);
+                    }
+                },
+                
+                openMaintenanceModal() {
+                    this.newMaintenance = {
+                        vehicleId: this.vehicleId,
+                        type: 'Oil Change',
+                        date: new Date().toISOString().split('T')[0],
+                        description: '',
+                        cost: 0,
+                        mileage: this.vehicle.currentMileage || 0
+                    };
+                    this.isMaintenanceModalOpen = true;
+                },
+                
+                async addMaintenance() {
+                    try {
+                        const response = await fetch('/api/maintenance', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.newMaintenance)
+                        });
+                        
+                        if (response.ok) {
+                            this.isMaintenanceModalOpen = false;
+                            this.loadVehicle(); // Refresh vehicle data
+                        }
+                    } catch (error) {
+                        console.error('Error adding maintenance:', error);
+                    }
+                },
+                
+                goBack() {
+                    window.location.href = 'dashboard.html#fleet';
+                }
+            };
+        }
+    </script>
+</body>
+</html>

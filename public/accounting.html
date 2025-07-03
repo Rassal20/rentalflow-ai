@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" x-data="accountingController()" x-init="loadEntries()">
+<head>
+    <!-- Same head as dashboard.html -->
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold mb-6">Accounting System</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-blue-900">
+                <h3 class="text-gray-300">Total Income</h3>
+                <p class="text-3xl font-bold" x-text="'AED ' + totals.income.toFixed(2)"></p>
+            </div>
+            <div class="stat-card bg-green-900">
+                <h3 class="text-gray-300">Total Expenses</h3>
+                <p class="text-3xl font-bold" x-text="'AED ' + totals.expenses.toFixed(2)"></p>
+            </div>
+            <div class="stat-card bg-purple-900">
+                <h3 class="text-gray-300">Net Profit</h3>
+                <p class="text-3xl font-bold" 
+                   :class="totals.net >= 0 ? 'text-green-400' : 'text-red-400'"
+                   x-text="'AED ' + totals.net.toFixed(2)"></p>
+            </div>
+            <div class="stat-card bg-yellow-900">
+                <h3 class="text-gray-300">Pending Invoices</h3>
+                <p class="text-3xl font-bold" x-text="'AED ' + totals.pending.toFixed(2)"></p>
+            </div>
+        </div>
+        
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <button @click="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded mr-4">
+                    + Add Entry
+                </button>
+                <button @click="exportToCSV()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                    Export to CSV
+                </button>
+            </div>
+            
+            <div class="flex space-x-2">
+                <select x-model="filterType" class="bg-gray-700 rounded p-2">
+                    <option value="">All Types</option>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+                <input type="month" x-model="filterMonth" class="bg-gray-700 rounded p-2">
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="py-3 px-4 text-left">Date</th>
+                        <th class="py-3 px-4 text-left">Type</th>
+                        <th class="py-3 px-4 text-left">Category</th>
+                        <th class="py-3 px-4 text-left">Description</th>
+                        <th class="py-3 px-4 text-left">Amount</th>
+                        <th class="py-3 px-4 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="entry in filteredEntries" :key="entry.id">
+                        <tr class="border-b border-gray-700 hover:bg-gray-750">
+                            <td class="py-3 px-4" x-text="new Date(entry.date.seconds * 1000).toLocaleDateString()"></td>
+                            <td class="py-3 px-4">
+                                <span :class="entry.type === 'income' ? 'text-green-400' : 'text-red-400'"
+                                      x-text="entry.type.charAt(0).toUpperCase() + entry.type.slice(1)"></span>
+                            </td>
+                            <td class="py-3 px-4" x-text="entry.category"></td>
+                            <td class="py-3 px-4" x-text="entry.description"></td>
+                            <td class="py-3 px-4" 
+                                :class="entry.type === 'income' ? 'text-green-400' : 'text-red-400'"
+                                x-text="'AED ' + entry.amount.toFixed(2)"></td>
+                            <td class="py-3 px-4">
+                                <button @click="editEntry(entry)" class="text-blue-400 mr-2">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button @click="deleteEntry(entry.id)" class="text-red-500">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Accounting Entry Modal -->
+    <div x-show="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg w-full max-w-md p-6">
+            <h2 class="text-2xl font-bold mb-4" x-text="isEditing ? 'Edit Entry' : 'Add Entry'"></h2>
+            
+            <form @submit.prevent="saveEntry">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block mb-2">Type</label>
+                        <select x-model="formData.type" class="w-full bg-gray-700 rounded p-2" required>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Date</label>
+                        <input type="date" x-model="formData.date" class="w-full bg-gray-700 rounded p-2" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-2">Category</label>
+                    <input type="text" x-model="formData.category" 
+                           class="w-full bg-gray-700 rounded p-2" required
+                           placeholder="Rental Income, Maintenance, etc.">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-2">Description</label>
+                    <textarea x-model="formData.description" class="w-full bg-gray-700 rounded p-2" required></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block mb-2">Amount (AED)</label>
+                    <input type="number" x-model="formData.amount" min="0" step="0.01"
+                           class="w-full bg-gray-700 rounded p-2" required>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" @click="isModalOpen = false" 
+                            class="bg-gray-600 px-4 py-2 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-indigo-600 px-4 py-2 rounded">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function accountingController() {
+            return {
+                entries: [],
+                filterType: '',
+                filterMonth: '',
+                isModalOpen: false,
+                isEditing: false,
+                formData: {
+                    id: '',
+                    type: 'income',
+                    date: new Date().toISOString().split('T')[0],
+                    category: '',
+                    description: '',
+                    amount: 0
+                },
+                totals: {
+                    income: 0,
+                    expenses: 0,
+                    net: 0,
+                    pending: 0
+                },
+                
+                async loadEntries() {
+                    try {
+                        const response = await fetch('/api/accounting');
+                        this.entries = await response.json();
+                        this.calculateTotals();
+                    } catch (error) {
+                        console.error('Error loading entries:', error);
+                    }
+                },
+                
+                calculateTotals() {
+                    this.totals = {
+                        income: this.entries
+                            .filter(e => e.type === 'income')
+                            .reduce((sum, e) => sum + e.amount, 0),
+                        expenses: this.entries
+                            .filter(e => e.type === 'expense')
+                            .reduce((sum, e) => sum + e.amount, 0),
+                        net: 0,
+                        pending: 0 // Would need to fetch from invoices
+                    };
+                    this.totals.net = this.totals.income - this.totals.expenses;
+                },
+                
+                get filteredEntries() {
+                    let result = [...this.entries];
+                    
+                    if (this.filterType) {
+                        result = result.filter(e => e.type === this.filterType);
+                    }
+                    
+                    if (this.filterMonth) {
+                        const [year, month] = this.filterMonth.split('-');
+                        result = result.filter(e => {
+                            const entryDate = new Date(e.date.seconds * 1000);
+                            return entryDate.getFullYear() == year && 
+                                   (entryDate.getMonth() + 1) == month;
+                        });
+                    }
+                    
+                    return result.sort((a, b) => 
+                        new Date(b.date.seconds * 1000) - new Date(a.date.seconds * 1000)
+                    );
+                },
+                
+                openAddModal() {
+                    this.isEditing = false;
+                    this.formData = {
+                        id: '',
+                        type: 'income',
+                        date: new Date().toISOString().split('T')[0],
+                        category: '',
+                        description: '',
+                        amount: 0
+                    };
+                    this.isModalOpen = true;
+                },
+                
+                editEntry(entry) {
+                    this.isEditing = true;
+                    this.formData = {
+                        ...entry,
+                        date: new Date(entry.date.seconds * 1000).toISOString().split('T')[0]
+                    };
+                    this.isModalOpen = true;
+                },
+                
+                async saveEntry() {
+                    const url = this.isEditing 
+                        ? `/api/accounting/${this.formData.id}` 
+                        : '/api/accounting';
+                        
+                    const method = this.isEditing ? 'PUT' : 'POST';
+                    
+                    try {
+                        const response = await fetch(url, {
+                            method,
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.formData)
+                        });
+                        
+                        if (response.ok) {
+                            this.isModalOpen = false;
+                            this.loadEntries();
+                        }
+                    } catch (error) {
+                        console.error('Error saving entry:', error);
+                    }
+                },
+                
+                async deleteEntry(id) {
+                    if (!confirm('Are you sure you want to delete this entry?')) return;
+                    
+                    try {
+                        await fetch(`/api/accounting/${id}`, { method: 'DELETE' });
+                        this.loadEntries();
+                    } 
