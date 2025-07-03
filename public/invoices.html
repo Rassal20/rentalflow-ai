@@ -62,7 +62,7 @@
                 <div class="card p-6 rounded-lg">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Invoice #</th><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Date</th><th class="p-4 text-gray-400 text-right">Amount</th><th class="p-4 text-gray-400 text-center">Status</th><th class="p-4 text-gray-400 text-center">Actions</th></tr></thead>
+                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Invoice #</th><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Date</th><th class="p-4 text-gray-400 text-right">Amount (AED)</th><th class="p-4 text-gray-400 text-center">Status</th><th class="p-4 text-gray-400 text-center">Actions</th></tr></thead>
                             <tbody id="invoices-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Initializing...</td></tr></tbody>
                         </table>
                     </div>
@@ -83,26 +83,30 @@
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const db = firebase.firestore();
-                if (!db) { return; }
+             const firebaseConfig = {
+                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
+                authDomain: "rentalflow-ai-app.firebaseapp.com",
+                projectId: "rentalflow-ai-app",
+                storageBucket: "rentalflow-ai-app.appspot.com",
+                messagingSenderId: "880755901556",
+                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
+            };
+            let db;
+            try {
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+                db = firebase.firestore();
+                initializeApp();
+            } catch (e) { console.error("CRITICAL: Firebase initialization failed.", e); }
 
-                // --- Sidebar Branding ---
+            function initializeApp() {
                 const companyProfileRef = db.collection('company_profile').doc('main');
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
                         const data = doc.data();
-                        const companyNameEl = document.getElementById('company-name-sidebar');
-                        const companyLogoEl = document.getElementById('company-logo-sidebar');
-                        if (data.companyName) { companyNameEl.textContent = data.companyName; }
-                        if (data.logoUrl) { companyLogoEl.src = data.logoUrl; } 
-                        else {
-                            const initial = (data.companyName || 'R').charAt(0);
-                            companyLogoEl.src = `https://placehold.co/40x40/161B22/22D3EE?text=${initial}`;
-                        }
+                        document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
+                        if (data.logoUrl) { document.getElementById('company-logo-sidebar').src = data.logoUrl; }
                     }
                 });
 
@@ -138,30 +142,28 @@
                         const financials = bookingData.financials;
                         const customerDoc = await db.collection('customers').doc(bookingData.customerId).get();
                         const customerData = customerDoc.exists ? customerDoc.data() : {};
-                        const companyDoc = await db.collection('company_profile').doc('main').get();
+                        const companyDoc = await companyProfileRef.get();
                         const companyData = companyDoc.exists ? companyDoc.data() : {};
                         
-                        // *** NEW: Build itemized list including fines ***
                         const invoiceItems = [];
-                        invoiceItems.push({ description: `Rental of ${bookingData.vehicleName} (${financials.rentalRate.days} days @ $${financials.rentalRate.rate.toFixed(2)}/day)`, total: financials.rentalRate.total });
-                        if (financials.additionalCharges) {
-                            financials.additionalCharges.forEach(c => invoiceItems.push({ description: c.description, total: c.amount }));
-                        }
-                        if (financials.fines) {
-                            financials.fines.forEach(f => invoiceItems.push({ description: `Fine: ${f.description}`, total: f.amount }));
+                        invoiceItems.push({ description: `Rental of ${bookingData.vehicleName} (${financials.rentalRate.days} days @ ${financials.currencySymbol}${financials.rentalRate.rate.toFixed(2)}/day)`, total: financials.rentalRate.total });
+                        if (financials.categorizedCharges) {
+                            financials.categorizedCharges.forEach(c => invoiceItems.push({ description: c.description || c.category, total: c.amount }));
                         }
 
                         const invoiceData = {
                             invoiceNumber: `INV-${Date.now()}`, bookingId: bookingId, issueDate: new Date(),
-                            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), status: 'unpaid',
-                            company: { name: companyData.companyName, taxNumber: companyData.taxNumber, address: companyData.address },
-                            customer: { name: customerData.fullName, address: customerData.address, email: customerData.email },
-                            items: invoiceItems, subtotal: financials.subtotal, taxAmount: financials.tax.amount, total: financials.total,
+                            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 
+                            status: 'unpaid', paymentMethod: null,
+                            company: { name: companyData.companyName, taxNumber: companyData.taxNumber, address: companyData.address, email: companyData.email, phone: companyData.phone },
+                            customer: { name: customerData.fullName, address: customerData.address, email: customerData.email, phone: `${customerData.phoneCode || ''} ${customerData.phone || ''}`, dob: customerData.dob, nationality: customerData.nationality },
+                            items: invoiceItems, 
+                            financials: financials // Copy the entire financials object
                         };
                         const newInvoice = await invoicesRef.add(invoiceData);
                         await bookingsRef.doc(bookingId).update({ invoiced: true });
                         await db.collection('transactions').add({
-                            description: `Invoice ${invoiceData.invoiceNumber}`, type: 'income', amount: invoiceData.total,
+                            description: `Invoice ${invoiceData.invoiceNumber}`, type: 'income', amount: financials.totalAED,
                             category: 'Rental Income', date: new Date(), invoiceId: newInvoice.id
                         });
                         closeModal();
@@ -173,12 +175,13 @@
                     if(snapshot.empty) { invoicesTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No invoices found.</td></tr>`; return; }
                     invoicesTableBody.innerHTML = snapshot.docs.map(doc => {
                         const inv = { id: doc.id, ...doc.data() };
+                        const totalAED = inv.financials ? inv.financials.totalAED : 0;
                         const statusClass = inv.status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400';
-                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">$${inv.total.toFixed(2)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-cyan-400 hover:text-cyan-300"><i class="fas fa-eye"></i> View</a></td></tr>`;
+                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">Dhs ${totalAED.toFixed(2)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-cyan-400 hover:text-cyan-300"><i class="fas fa-eye"></i> View</a></td></tr>`;
                     }).join('');
                 });
                 document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
-            }, 200);
+            }
         });
     </script>
 </body>

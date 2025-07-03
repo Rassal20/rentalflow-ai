@@ -27,6 +27,7 @@
         .form-input { background-color: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); }
         .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); outline: none; }
         .btn-primary { background-color: var(--accent); color: var(--bg-primary); font-weight: bold; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
     </style>
 </head>
 <body class="text-gray-300">
@@ -79,10 +80,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div><label for="fullName" class="block text-sm text-gray-400">Full Name</label><input type="text" id="fullName" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
                     <div><label for="email" class="block text-sm text-gray-400">Email Address</label><input type="email" id="email" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
-                    <div><label for="phone" class="block text-sm text-gray-400">Phone Number</label><input type="tel" id="phone" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div>
+                        <label for="phone" class="block text-sm text-gray-400">Phone Number</label>
+                        <div class="flex mt-1">
+                            <select id="phone-code" class="form-input rounded-l-md"></select>
+                            <input type="tel" id="phone" class="form-input rounded-r-md w-full">
+                        </div>
+                    </div>
                     <div><label for="address" class="block text-sm text-gray-400">Address</label><input type="text" id="address" class="form-input mt-1 block w-full p-2 rounded-md"></div>
-                    <div><label for="age" class="block text-sm text-gray-400">Age</label><input type="number" id="age" class="form-input mt-1 block w-full p-2 rounded-md"></div>
-                    <div><label for="nationality" class="block text-sm text-gray-400">Nationality</label><input type="text" id="nationality" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="dob" class="block text-sm text-gray-400">Date of Birth</label><input type="date" id="dob" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="nationality" class="block text-sm text-gray-400">Nationality</label><select id="nationality" class="form-input mt-1 block w-full p-2 rounded-md"></select></div>
                 </div>
                 <div><label for="notes" class="block text-sm text-gray-400">Notes</label><textarea id="notes" rows="3" class="form-input mt-1 block w-full p-2 rounded-md"></textarea></div>
                 <div>
@@ -100,7 +107,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- This is the fix. Initialize Firebase directly on this page. ---
             const firebaseConfig = {
                 apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
                 authDomain: "rentalflow-ai-app.firebaseapp.com",
@@ -109,25 +115,19 @@
                 messagingSenderId: "880755901556",
                 appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
             };
-
             let db, storage;
             try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
                 storage = firebase.storage();
-                console.log("Customers Page: Firebase connection successful.");
-                initializeApp(); // Run the main app logic
+                initializeApp();
             } catch (e) {
                 console.error("CRITICAL: Firebase initialization failed on Customers page.", e);
-                document.getElementById('customers-table-body').innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500"><strong>Error: Database connection failed.</strong><br>Please check the Firebase configuration.</td></tr>`;
+                document.getElementById('customers-table-body').innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500"><strong>Error: Database connection failed.</strong></td></tr>`;
                 return;
             }
-            // --- End of the fix ---
 
             function initializeApp() {
-                // --- Sidebar Branding ---
                 const companyProfileRef = db.collection('company_profile').doc('main');
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
@@ -152,6 +152,26 @@
                 const documentsContainer = document.getElementById('documents-container');
                 let filesToUpload = [];
 
+                // --- Populate Country & Phone Code Dropdowns ---
+                const nationalitySelect = document.getElementById('nationality');
+                const phoneCodeSelect = document.getElementById('phone-code');
+                fetch('https://restcountries.com/v3.1/all').then(res => res.json()).then(countries => {
+                    const sortedCountries = countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+                    let countryOptions = '<option value="">Select Nationality</option>';
+                    let phoneOptions = '<option value="">Code</option>';
+                    sortedCountries.forEach(country => {
+                        const flag = country.flag || '';
+                        const name = country.name.common;
+                        countryOptions += `<option value="${name}">${flag} ${name}</option>`;
+                        if (country.idd.root) {
+                            const code = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
+                            phoneOptions += `<option value="${code}">${flag} ${code}</option>`;
+                        }
+                    });
+                    nationalitySelect.innerHTML = countryOptions;
+                    phoneCodeSelect.innerHTML = phoneOptions;
+                });
+
                 const openModal = (mode, customer = {}) => {
                     customerForm.reset();
                     filesToUpload = [];
@@ -163,8 +183,9 @@
                         document.getElementById('fullName').value = customer.fullName || '';
                         document.getElementById('email').value = customer.email || '';
                         document.getElementById('phone').value = customer.phone || '';
+                        document.getElementById('phone-code').value = customer.phoneCode || '';
                         document.getElementById('address').value = customer.address || '';
-                        document.getElementById('age').value = customer.age || '';
+                        document.getElementById('dob').value = customer.dob || '';
                         document.getElementById('nationality').value = customer.nationality || '';
                         document.getElementById('notes').value = customer.notes || '';
                         if (customer.documents && Array.isArray(customer.documents)) {
@@ -205,9 +226,10 @@
                     const id = document.getElementById('customer-id').value;
                     const data = {
                         fullName: document.getElementById('fullName').value, email: document.getElementById('email').value,
-                        phone: document.getElementById('phone').value, address: document.getElementById('address').value,
-                        age: Number(document.getElementById('age').value) || null, nationality: document.getElementById('nationality').value,
-                        notes: document.getElementById('notes').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        phone: document.getElementById('phone').value, phoneCode: document.getElementById('phone-code').value,
+                        address: document.getElementById('address').value, dob: document.getElementById('dob').value,
+                        nationality: document.getElementById('nationality').value, notes: document.getElementById('notes').value,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     try {
                         let docRef;
@@ -239,7 +261,7 @@
                     }
                     customersTableBody.innerHTML = snapshot.docs.map(doc => {
                         const c = { id: doc.id, ...doc.data() };
-                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${c.fullName}</td><td class="p-4">${c.email}</td><td class="p-4">${c.phone}</td><td class="p-4 space-x-4"><button class="edit-btn text-cyan-400 hover:text-cyan-300" data-id="${c.id}"><i class="fas fa-edit"></i></button><button class="delete-btn text-red-500 hover:text-red-400" data-id="${c.id}"><i class="fas fa-trash"></i></button></td></tr>`;
+                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${c.fullName}</td><td class="p-4">${c.email}</td><td class="p-4">${c.phoneCode || ''} ${c.phone || ''}</td><td class="p-4 space-x-4"><button class="edit-btn text-cyan-400 hover:text-cyan-300" data-id="${c.id}"><i class="fas fa-edit"></i></button><button class="delete-btn text-red-500 hover:text-red-400" data-id="${c.id}"><i class="fas fa-trash"></i></button></td></tr>`;
                     }).join('');
                 });
                 

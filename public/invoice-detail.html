@@ -20,10 +20,15 @@
         }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); -webkit-print-color-adjust: exact; }
         h1, h2, h3, .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+        .a4-container { width: 210mm; min-height: 297mm; }
+        .form-input { background-color: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); outline: none; }
+        .btn-primary { background-color: var(--accent); color: var(--bg-primary); font-weight: bold; }
+        [contenteditable]:focus { outline: 1px dashed var(--accent); background-color: rgba(34, 211, 238, 0.1); }
         @media print {
             body { background-color: white; color: black; }
             .no-print { display: none !important; }
-            .invoice-box { box-shadow: none !important; border: none !important; background-color: white !important; }
+            .a4-container { margin: 0; padding: 0; box-shadow: none !important; border: none !important; }
             .print-text-black { color: black !important; }
             .print-text-gray { color: #555 !important; }
             .print-bg-gray { background-color: #f3f4f6 !important; }
@@ -33,77 +38,172 @@
 <body class="text-gray-300">
     <div id="loader" class="flex items-center justify-center h-screen"><i class="fas fa-spinner fa-spin text-4xl text-cyan-400"></i></div>
     <div id="invoice-content" class="hidden">
-        <div class="bg-[--bg-primary] p-4 sm:p-8 no-print">
+        <div class="p-4 sm:p-8 no-print">
             <div class="max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-4">
                     <a href="/invoices.html" class="text-cyan-400 hover:underline"><i class="fas fa-arrow-left mr-2"></i>Back to Invoices</a>
-                    <button onclick="window.print()" class="bg-cyan-500 text-black font-bold px-6 py-2 rounded-lg"><i class="fas fa-print mr-2"></i>Print / PDF</button>
+                    <div>
+                        <button id="save-changes-button" class="bg-green-500 text-white font-bold px-6 py-2 rounded-lg mr-2"><i class="fas fa-save mr-2"></i>Save Changes</button>
+                        <button onclick="window.print()" class="bg-cyan-500 text-black font-bold px-6 py-2 rounded-lg"><i class="fas fa-print mr-2"></i>Print / PDF</button>
+                    </div>
                 </div>
-                <div id="invoice-box" class="invoice-box bg-[--bg-secondary] border border-[--border-color] rounded-lg shadow-lg p-8 sm:p-12"></div>
             </div>
         </div>
-        <div class="hidden print:block"><div id="printable-invoice" class="bg-white p-12"></div></div>
+        <div class="flex justify-center p-4">
+            <div id="invoice-box" class="a4-container bg-[--bg-secondary] shadow-lg p-12 print:p-0">
+                 <!-- JS will populate this -->
+            </div>
+        </div>
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(async () => {
-                const db = firebase.firestore();
-                if (!db) { return; }
+            const firebaseConfig = {
+                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
+                authDomain: "rentalflow-ai-app.firebaseapp.com",
+                projectId: "rentalflow-ai-app",
+                storageBucket: "rentalflow-ai-app.appspot.com",
+                messagingSenderId: "880755901556",
+                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
+            };
+            let db;
+            try {
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+                db = firebase.firestore();
+                initializeApp();
+            } catch (e) {
+                document.getElementById('loader').innerHTML = `<p class="text-red-500 text-center font-bold">Error: Database connection failed.</p>`;
+            }
+
+            async function initializeApp() {
                 const loader = document.getElementById('loader');
                 const invoiceBox = document.getElementById('invoice-box');
                 const invoiceId = new URLSearchParams(window.location.search).get('id');
-                if (!invoiceId) { loader.innerHTML = '<p class="text-red-500 text-center font-bold">Error: No Invoice ID provided.</p>'; return; }
+                if (!invoiceId) { loader.innerHTML = '<p class="text-red-500 font-bold">Error: No Invoice ID.</p>'; return; }
+
+                const invoiceRef = db.collection('invoices').doc(invoiceId);
+                
                 try {
-                    const invoiceDoc = await db.collection('invoices').doc(invoiceId).get();
+                    const invoiceDoc = await invoiceRef.get();
                     if (!invoiceDoc.exists) throw new Error('Invoice not found.');
-                    const invoice = invoiceDoc.data();
-                    const company = invoice.company || {};
-                    const customer = invoice.customer || {};
-                    const itemsHtml = invoice.items.map(item => `<tr class="border-b border-[--border-color] print:border-gray-200"><td class="py-3 pr-3">${item.description}</td><td class="py-3 pl-3 text-right">$${item.total.toFixed(2)}</td></tr>`).join('');
-                    const invoiceHtml = `
-                        <div class="flex justify-between items-start pb-8 border-b border-[--border-color] print:border-gray-200">
-                            <div>
-                                <h2 class="text-2xl font-bold text-white print-text-black">${company.name || 'Your Company'}</h2>
-                                <p class="text-[--text-secondary] print-text-gray">${company.address || ''}</p>
-                                <p class="text-[--text-secondary] print-text-gray">TRN: ${company.taxNumber || 'N/A'}</p>
-                            </div>
-                            <div class="text-right">
-                                <h1 class="text-4xl font-bold uppercase text-white print-text-black">Invoice</h1>
-                                <p class="text-[--text-secondary] print-text-gray"># ${invoice.invoiceNumber}</p>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-start py-8">
-                            <div>
-                                <h3 class="font-semibold text-gray-400 print-text-gray mb-1">Bill To</h3>
-                                <p class="font-bold text-white print-text-black">${customer.name}</p>
-                                <p class="text-[--text-secondary] print-text-gray">${customer.address || ''}</p>
-                                <p class="text-[--text-secondary] print-text-gray">${customer.email || ''}</p>
-                            </div>
-                            <div class="text-right text-[--text-secondary] print-text-gray">
-                                <p><strong class="text-gray-400 print-text-gray">Issue Date:</strong> ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}</p>
-                                <p><strong class="text-gray-400 print-text-gray">Due Date:</strong> ${new Date(invoice.dueDate.seconds * 1000).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                        <table class="w-full text-left mb-8 text-white print-text-black">
-                            <thead><tr class="bg-gray-800 print-bg-gray"><th class="p-3 font-semibold">Description</th><th class="p-3 font-semibold text-right">Amount</th></tr></thead>
-                            <tbody>${itemsHtml}</tbody>
-                        </table>
-                        <div class="flex justify-end">
-                            <div class="w-full max-w-xs space-y-2 text-[--text-secondary] print-text-gray">
-                                <div class="flex justify-between"><span>Subtotal</span><span>$${invoice.subtotal.toFixed(2)}</span></div>
-                                <div class="flex justify-between"><span>VAT</span><span>$${invoice.taxAmount.toFixed(2)}</span></div>
-                                <div class="flex justify-between font-bold text-xl mt-2 pt-2 border-t border-[--border-color] print:border-gray-200 text-white print-text-black"><span>Total Due</span><span>$${invoice.total.toFixed(2)}</span></div>
-                            </div>
-                        </div>`;
-                    invoiceBox.innerHTML = invoiceHtml;
-                    document.getElementById('printable-invoice').innerHTML = invoiceHtml;
+                    
+                    renderInvoice(invoiceDoc.data());
+
                     loader.style.display = 'none';
                     document.getElementById('invoice-content').classList.remove('hidden');
-                } catch (error) { loader.innerHTML = `<p class="text-red-500 text-center font-bold">Error: ${error.message}</p>`; }
-            }, 200);
+
+                    document.getElementById('save-changes-button').addEventListener('click', () => saveInvoiceChanges(invoiceId));
+
+                } catch (error) {
+                    loader.innerHTML = `<p class="text-red-500 font-bold">Error: ${error.message}</p>`;
+                }
+            }
+
+            function renderInvoice(invoice) {
+                const company = invoice.company || {};
+                const customer = invoice.customer || {};
+                const financials = invoice.financials || {};
+                const symbol = financials.currencySymbol || '$';
+
+                const itemsHtml = invoice.items.map((item, index) => `
+                    <tr class="border-b border-[--border-color] print:border-gray-200">
+                        <td class="py-3 pr-3" contenteditable="true" data-item-index="${index}" data-field="description">${item.description}</td>
+                        <td class="py-3 pl-3 text-right" contenteditable="true" data-item-index="${index}" data-field="total">${item.total.toFixed(2)}</td>
+                    </tr>`).join('');
+
+                const paymentMethodOptions = ["Card", "Cash", "Bank Transfer", "Crypto (USDT)"].map(p => `<option value="${p}" ${invoice.paymentMethod === p ? 'selected' : ''}>${p}</option>`).join('');
+
+                const invoiceHtml = `
+                    <div class="flex justify-between items-start pb-8 border-b border-[--border-color] print:border-gray-200">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white print-text-black">${company.name || 'Your Company'}</h2>
+                            <p class="text-[--text-secondary] print-text-gray">${company.address || ''}</p>
+                            <p class="text-[--text-secondary] print-text-gray">${company.email || ''} | ${company.phone || ''}</p>
+                            <p class="text-[--text-secondary] print-text-gray">TRN: ${company.taxNumber || 'N/A'}</p>
+                        </div>
+                        <div class="text-right">
+                            <h1 class="text-4xl font-bold uppercase text-white print-text-black">Invoice</h1>
+                            <p class="text-[--text-secondary] print-text-gray"># ${invoice.invoiceNumber}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-start py-8">
+                        <div>
+                            <h3 class="font-semibold text-gray-400 print-text-gray mb-1">Bill To</h3>
+                            <p class="font-bold text-white print-text-black">${customer.name}</p>
+                            <p class="text-[--text-secondary] print-text-gray">Nationality: ${customer.nationality || 'N/A'}</p>
+                            <p class="text-[--text-secondary] print-text-gray">DOB: ${customer.dob || 'N/A'}</p>
+                            <p class="text-[--text-secondary] print-text-gray">${customer.address || ''}</p>
+                            <p class="text-[--text-secondary] print-text-gray">${customer.email || ''}</p>
+                        </div>
+                        <div class="text-right text-[--text-secondary] print-text-gray">
+                            <p><strong class="text-gray-400 print-text-gray">Issue Date:</strong> ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}</p>
+                            <p><strong class="text-gray-400 print-text-gray">Due Date:</strong> ${new Date(invoice.dueDate.seconds * 1000).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <table class="w-full text-left mb-8 text-white print-text-black">
+                        <thead><tr class="bg-gray-800 print-bg-gray"><th class="p-3 font-semibold">Description</th><th class="p-3 font-semibold text-right">Amount (${symbol})</th></tr></thead>
+                        <tbody id="invoice-items-body">${itemsHtml}</tbody>
+                    </table>
+                    <div class="flex justify-between items-end">
+                        <div class="w-1/2">
+                            <h3 class="font-semibold text-gray-400 print-text-gray mb-2">Payment Status</h3>
+                            <div class="flex items-center gap-4">
+                                <select id="status-select" class="form-input p-2 rounded-md">
+                                    <option value="unpaid" ${invoice.status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
+                                    <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>Paid</option>
+                                </select>
+                                <select id="payment-method-select" class="form-input p-2 rounded-md ${invoice.status !== 'paid' ? 'hidden' : ''}">
+                                    <option value="">Select Method</option>
+                                    ${paymentMethodOptions}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="w-full max-w-xs space-y-2 text-[--text-secondary] print-text-gray">
+                            <div class="flex justify-between"><span>Subtotal (${symbol})</span><span id="subtotal-display">${financials.subtotal.toFixed(2)}</span></div>
+                            <div class="flex justify-between"><span>VAT (${(financials.tax.rate * 100).toFixed(0)}%)</span><span id="tax-display">${financials.tax.amount.toFixed(2)}</span></div>
+                            <div class="flex justify-between font-bold text-xl mt-2 pt-2 border-t border-[--border-color] print:border-gray-200 text-white print-text-black"><span>Total (${symbol})</span><span id="total-display">${financials.total.toFixed(2)}</span></div>
+                            <div class="flex justify-between font-semibold text-lg mt-1 text-cyan-400"><span>Total (AED)</span><span>Dhs ${financials.totalAED.toFixed(2)}</span></div>
+                        </div>
+                    </div>`;
+                invoiceBox.innerHTML = invoiceHtml;
+                document.getElementById('status-select').addEventListener('change', (e) => {
+                    document.getElementById('payment-method-select').classList.toggle('hidden', e.target.value !== 'paid');
+                });
+            }
+
+            async function saveInvoiceChanges(invoiceId) {
+                const saveButton = document.getElementById('save-changes-button');
+                saveButton.disabled = true;
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
+                const items = [];
+                document.querySelectorAll('#invoice-items-body tr').forEach(row => {
+                    const description = row.querySelector('[data-field="description"]').textContent;
+                    const total = parseFloat(row.querySelector('[data-field="total"]').textContent);
+                    items.push({ description, total });
+                });
+
+                const status = document.getElementById('status-select').value;
+                const paymentMethod = status === 'paid' ? document.getElementById('payment-method-select').value : null;
+
+                const updatedData = {
+                    items: items,
+                    status: status,
+                    paymentMethod: paymentMethod
+                };
+
+                try {
+                    await invoiceRef.update(updatedData);
+                    alert('Invoice updated successfully!');
+                } catch (error) {
+                    console.error("Error updating invoice:", error);
+                    alert('Failed to update invoice.');
+                } finally {
+                    saveButton.disabled = false;
+                    saveButton.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
+                }
+            }
         });
     </script>
 </body>

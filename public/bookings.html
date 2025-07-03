@@ -63,7 +63,7 @@
                 <div class="card p-6 rounded-lg">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Vehicle</th><th class="p-4 text-gray-400">Dates</th><th class="p-4 text-gray-400">Total</th><th class="p-4 text-gray-400">Status</th><th class="p-4 text-gray-400">Actions</th></tr></thead>
+                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Vehicle</th><th class="p-4 text-gray-400">Dates</th><th class="p-4 text-gray-400">Total (AED)</th><th class="p-4 text-gray-400">Status</th><th class="p-4 text-gray-400">Actions</th></tr></thead>
                             <tbody id="bookings-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Initializing...</td></tr></tbody>
                         </table>
                     </div>
@@ -85,22 +85,19 @@
                 </div>
                 <div class="border-t border-gray-700 pt-6 space-y-4"><h4 class="text-lg font-medium text-white">Financials</h4>
                     <div class="flex items-end gap-4">
-                        <div><label for="rentalRate" class="block text-sm text-gray-400">Rate Per Day ($)</label><input type="number" step="0.01" id="rentalRate" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
+                        <div><label for="currency" class="block text-sm text-gray-400">Currency</label><select id="currency" class="form-input mt-1 block w-full p-2 rounded-md"><option value="AED" data-symbol="Dhs">AED</option><option value="USD" data-symbol="$">USD</option><option value="EUR" data-symbol="€">EUR</option><option value="GBP" data-symbol="£">GBP</option><option value="SAR" data-symbol="SR">SAR</option><option value="USDT" data-symbol="₮">USDT</option></select></div>
+                        <div><label for="rentalRate" class="block text-sm text-gray-400">Rate Per Day</label><input type="number" step="0.01" id="rentalRate" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
                         <div class="text-center"><p class="text-sm text-gray-400">Days</p><p id="days-display" class="font-bold text-lg text-white">0</p></div>
-                        <div><label class="block text-sm text-gray-400">Rental Total</label><p id="rental-total-display" class="mt-1 w-full p-2 bg-gray-900 rounded-md text-white">$0.00</p></div>
+                        <div><label class="block text-sm text-gray-400">Rental Total</label><p id="rental-total-display" class="mt-1 w-full p-2 bg-gray-900 rounded-md text-white">0.00</p></div>
                     </div>
-                    <div><label class="block text-sm mb-2 text-gray-400">Additional Charges</label><div id="additional-charges-container" class="space-y-2"></div><button type="button" id="add-charge-button" class="mt-2 text-sm text-cyan-400 hover:text-cyan-300 font-semibold"><i class="fas fa-plus mr-1"></i> Add Charge</button></div>
-                    <div><label class="block text-sm mb-2 text-gray-400">Fines</label><div id="fines-container" class="space-y-2"></div><button type="button" id="add-fine-button" class="mt-2 text-sm text-orange-400 hover:text-orange-300 font-semibold"><i class="fas fa-exclamation-triangle mr-1"></i> Add Fine</button></div>
+                    <div><label class="block text-sm mb-2 text-gray-400">Charges & Fines</label><div id="charges-container" class="space-y-2"></div><button type="button" id="add-charge-button" class="mt-2 text-sm text-cyan-400 hover:text-cyan-300 font-semibold"><i class="fas fa-plus mr-1"></i> Add Item</button></div>
                 </div>
                 <div class="border-t border-gray-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-900/50 p-4 rounded-lg space-y-2">
                         <h4 class="font-semibold text-white">Summary</h4>
-                        <div class="flex justify-between text-sm text-gray-400"><span>Subtotal</span><span id="summary-subtotal">$0.00</span></div>
-                        <div class="flex justify-between items-center text-sm text-gray-400">
-                            <div class="flex items-center gap-2"><label for="taxRate">VAT (%)</label><input type="number" id="taxRate" value="5" class="form-input w-16 p-1 rounded-md text-sm"></div>
-                            <span id="summary-tax">$0.00</span>
-                        </div>
-                        <div class="flex justify-between font-bold text-lg border-t border-gray-700 pt-2 mt-2 text-white"><span>Total</span><span id="summary-total">$0.00</span></div>
+                        <div class="flex justify-between text-sm text-gray-400"><span>Subtotal</span><span id="summary-subtotal">0.00</span></div>
+                        <div class="flex justify-between items-center text-sm text-gray-400"><div class="flex items-center gap-2"><label for="taxRate">VAT (%)</label><input type="number" id="taxRate" value="5" class="form-input w-16 p-1 rounded-md text-sm"></div><span id="summary-tax">0.00</span></div>
+                        <div class="flex justify-between font-bold text-lg border-t border-gray-700 pt-2 mt-2 text-white"><span>Total</span><span id="summary-total">0.00</span></div>
                     </div>
                     <div><label for="status" class="block text-sm text-gray-400">Booking Status</label><select id="status" class="form-input mt-1 block w-full p-2 rounded-md" required><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="rented">Rented</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
                 </div>
@@ -124,27 +121,22 @@
             try {
                 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
                 db = firebase.firestore();
-                console.log("Bookings Page: Firebase connection successful.");
                 initializeApp();
             } catch (e) {
-                console.error("CRITICAL: Firebase initialization failed on Bookings page.", e);
                 document.getElementById('bookings-table-body').innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-500"><strong>Error: Database connection failed.</strong></td></tr>`;
                 return;
             }
 
-            function initializeApp() {
+            async function initializeApp() {
                 const companyProfileRef = db.collection('company_profile').doc('main');
+                const settings = (await companyProfileRef.get()).data() || {};
+                const currencyRates = settings.currencyRates || { USD: 3.67, EUR: 4.0, GBP: 4.5, SAR: 0.98, USDT: 3.67, AED: 1 };
+                
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
                         const data = doc.data();
-                        const companyNameEl = document.getElementById('company-name-sidebar');
-                        const companyLogoEl = document.getElementById('company-logo-sidebar');
-                        if (data.companyName) { companyNameEl.textContent = data.companyName; }
-                        if (data.logoUrl) { companyLogoEl.src = data.logoUrl; } 
-                        else {
-                            const initial = (data.companyName || 'R').charAt(0);
-                            companyLogoEl.src = `https://placehold.co/40x40/161B22/22D3EE?text=${initial}`;
-                        }
+                        document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
+                        if (data.logoUrl) { document.getElementById('company-logo-sidebar').src = data.logoUrl; }
                     }
                 });
 
@@ -154,73 +146,77 @@
                 const addBookingButton = document.getElementById('add-booking-button');
                 const bookingModal = document.getElementById('booking-modal');
                 const bookingForm = document.getElementById('booking-form');
-                const chargesContainer = document.getElementById('additional-charges-container');
-                const finesContainer = document.getElementById('fines-container');
+                const chargesContainer = document.getElementById('charges-container');
                 const bookingsTableBody = document.getElementById('bookings-table-body');
                 
-                const openModal = (mode, booking = {}) => {
+                const chargeCategories = ["Road Tolls (Salik/Darb)", "Fines", "Parking", "Fuel", "Extra Driver", "Child Seat", "Extra Kilometer"];
+
+                const openModal = async (mode, booking = {}) => {
                     bookingForm.reset();
                     chargesContainer.innerHTML = '';
-                    finesContainer.innerHTML = '';
-                    populateDropdowns(booking.vehicleId);
                     document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Booking' : 'Add New Booking';
                     document.getElementById('booking-id').value = mode === 'edit' ? booking.id : '';
+                    
+                    await populateDropdowns(booking.vehicleId, booking.customerId);
+                    
                     if (mode === 'edit' && booking.financials) {
-                        document.getElementById('customer').value = booking.customerId;
-                        document.getElementById('vehicle').value = booking.vehicleId;
-                        document.getElementById('startDate').value = new Date(booking.startDate.seconds * 1000).toISOString().slice(0, 16);
-                        document.getElementById('endDate').value = new Date(booking.endDate.seconds * 1000).toISOString().slice(0, 16);
                         document.getElementById('status').value = booking.status;
+                        document.getElementById('currency').value = booking.financials.currency || 'AED';
                         document.getElementById('rentalRate').value = booking.financials.rentalRate.rate;
                         document.getElementById('taxRate').value = (booking.financials.tax.rate * 100);
-                        if(booking.financials.additionalCharges) { booking.financials.additionalCharges.forEach(c => addChargeRow(c.description, c.amount)); }
-                        if(booking.financials.fines) { booking.financials.fines.forEach(f => addFineRow(f.description, f.amount)); }
-                    } else { addChargeRow(); addFineRow(); }
+                        if(booking.financials.categorizedCharges) {
+                            booking.financials.categorizedCharges.forEach(c => addChargeRow(c.category, c.description, c.amount));
+                        }
+                    } else { addChargeRow(); }
                     updateCalculations();
                     bookingModal.classList.remove('hidden');
                 };
+
                 const closeModal = () => bookingModal.classList.add('hidden');
-                const addChargeRow = (desc = '', amt = '') => {
+
+                const addChargeRow = (category = '', description = '', amount = '') => {
                     const row = document.createElement('div');
                     row.className = 'flex items-center gap-2';
-                    row.innerHTML = `<input type="text" placeholder="e.g., Fuel, Tolls" class="charge-desc form-input w-2/3 p-2 rounded-md" value="${desc}"><input type="number" step="0.01" placeholder="Amount" class="charge-amount form-input w-1/3 p-2 rounded-md" value="${amt}"><button type="button" class="remove-row-btn text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>`;
+                    const categoryOptions = chargeCategories.map(c => `<option value="${c}" ${c === category ? 'selected' : ''}>${c}</option>`).join('');
+                    row.innerHTML = `
+                        <select class="charge-category form-input p-2 rounded-md w-1/3">${categoryOptions}</select>
+                        <input type="text" placeholder="Description" class="charge-desc form-input w-1/3 p-2 rounded-md" value="${description}">
+                        <input type="number" step="0.01" placeholder="Amount" class="charge-amount form-input w-1/3 p-2 rounded-md" value="${amount}">
+                        <button type="button" class="remove-row-btn text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                    `;
                     chargesContainer.appendChild(row);
                     row.querySelector('.remove-row-btn').addEventListener('click', () => { row.remove(); updateCalculations(); });
                     row.querySelector('.charge-amount').addEventListener('input', updateCalculations);
                 };
-                const addFineRow = (desc = '', amt = '') => {
-                    const row = document.createElement('div');
-                    row.className = 'flex items-center gap-2';
-                    row.innerHTML = `<input type="text" placeholder="e.g., Speeding Fine #123" class="fine-desc form-input w-2/3 p-2 rounded-md" value="${desc}"><input type="number" step="0.01" placeholder="Amount" class="fine-amount form-input w-1/3 p-2 rounded-md" value="${amt}"><button type="button" class="remove-row-btn text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>`;
-                    finesContainer.appendChild(row);
-                    row.querySelector('.remove-row-btn').addEventListener('click', () => { row.remove(); updateCalculations(); });
-                    row.querySelector('.fine-amount').addEventListener('input', updateCalculations);
-                };
+                
                 const updateCalculations = () => {
+                    const currencySelect = document.getElementById('currency');
+                    const symbol = currencySelect.options[currencySelect.selectedIndex].dataset.symbol || '$';
                     const start = new Date(document.getElementById('startDate').value);
                     const end = new Date(document.getElementById('endDate').value);
-                    const days = (end - start) > 0 ? Math.ceil((end - start) / (1000 * 60 * 60 * 24)) : 0;
+                    const days = (end > start) ? Math.ceil((end - start) / (1000 * 60 * 60 * 24)) : 0;
                     document.getElementById('days-display').textContent = days;
                     const rentalRate = parseFloat(document.getElementById('rentalRate').value) || 0;
                     const rentalTotal = days * rentalRate;
-                    document.getElementById('rental-total-display').textContent = `$${rentalTotal.toFixed(2)}`;
+                    document.getElementById('rental-total-display').textContent = `${symbol}${rentalTotal.toFixed(2)}`;
                     let chargesTotal = 0;
                     chargesContainer.querySelectorAll('.charge-amount').forEach(i => chargesTotal += parseFloat(i.value) || 0);
-                    let finesTotal = 0;
-                    finesContainer.querySelectorAll('.fine-amount').forEach(i => finesTotal += parseFloat(i.value) || 0);
-                    const subtotal = rentalTotal + chargesTotal + finesTotal;
-                    document.getElementById('summary-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+                    const subtotal = rentalTotal + chargesTotal;
+                    document.getElementById('summary-subtotal').textContent = `${symbol}${subtotal.toFixed(2)}`;
                     const taxRate = (parseFloat(document.getElementById('taxRate').value) || 0) / 100;
                     const taxAmount = subtotal * taxRate;
-                    document.getElementById('summary-tax').textContent = `$${taxAmount.toFixed(2)}`;
+                    document.getElementById('summary-tax').textContent = `${symbol}${taxAmount.toFixed(2)}`;
                     const total = subtotal + taxAmount;
-                    document.getElementById('summary-total').textContent = `$${total.toFixed(2)}`;
+                    document.getElementById('summary-total').textContent = `${symbol}${total.toFixed(2)}`;
                 };
-                const populateDropdowns = async (editingVehicleId) => {
+
+                const populateDropdowns = async (editingVehicleId, editingCustomerId) => {
                     const customerSelect = document.getElementById('customer');
                     const vehicleSelect = document.getElementById('vehicle');
                     const customers = await customersRef.orderBy('fullName').get();
                     customerSelect.innerHTML = '<option value="">Select Customer</option>' + customers.docs.map(d => `<option value="${d.id}">${d.data().fullName}</option>`).join('');
+                    if (editingCustomerId) customerSelect.value = editingCustomerId;
+
                     const vehicles = await vehiclesRef.where('status', '==', 'available').get();
                     let vehicleOptions = '<option value="">Select Vehicle</option>' + vehicles.docs.map(d => `<option value="${d.id}">${d.data().brand} ${d.data().model}</option>`).join('');
                     if (editingVehicleId && !vehicles.docs.some(d => d.id === editingVehicleId)) {
@@ -228,35 +224,41 @@
                         if (vDoc.exists) vehicleOptions += `<option value="${vDoc.id}">${vDoc.data().brand} ${vDoc.data().model} (Rented)</option>`;
                     }
                     vehicleSelect.innerHTML = vehicleOptions;
+                    if (editingVehicleId) vehicleSelect.value = editingVehicleId;
                 };
+
                 addBookingButton.addEventListener('click', () => openModal('add'));
                 document.getElementById('close-modal-button').addEventListener('click', closeModal);
                 document.getElementById('cancel-button').addEventListener('click', closeModal);
                 document.getElementById('add-charge-button').addEventListener('click', () => addChargeRow());
-                document.getElementById('add-fine-button').addEventListener('click', () => addFineRow());
-                ['startDate', 'endDate', 'rentalRate', 'taxRate'].forEach(id => document.getElementById(id).addEventListener('input', updateCalculations));
+                ['startDate', 'endDate', 'rentalRate', 'taxRate', 'currency'].forEach(id => document.getElementById(id).addEventListener('input', updateCalculations));
+
                 bookingForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     const id = document.getElementById('booking-id').value;
+                    const currencySelect = document.getElementById('currency');
+                    const charges = Array.from(chargesContainer.querySelectorAll('.flex')).map(r => ({ category: r.querySelector('.charge-category').value, description: r.querySelector('.charge-desc').value, amount: parseFloat(r.querySelector('.charge-amount').value) })).filter(c => c.description || c.amount > 0);
                     const days = parseInt(document.getElementById('days-display').textContent) || 0;
                     const rentalRate = parseFloat(document.getElementById('rentalRate').value) || 0;
                     const taxRate = (parseFloat(document.getElementById('taxRate').value) || 0) / 100;
-                    const charges = Array.from(chargesContainer.querySelectorAll('.flex')).map(r => ({ description: r.querySelector('.charge-desc').value, amount: parseFloat(r.querySelector('.charge-amount').value) })).filter(c => c.description && c.amount > 0);
-                    const fines = Array.from(finesContainer.querySelectorAll('.flex')).map(r => ({ description: r.querySelector('.fine-desc').value, amount: parseFloat(r.querySelector('.fine-amount').value) })).filter(f => f.description && f.amount > 0);
                     const rentalTotal = days * rentalRate;
                     const chargesTotal = charges.reduce((s, c) => s + c.amount, 0);
-                    const finesTotal = fines.reduce((s, f) => s + f.amount, 0);
-                    const subtotal = rentalTotal + chargesTotal + finesTotal;
+                    const subtotal = rentalTotal + chargesTotal;
                     const taxAmount = subtotal * taxRate;
                     const total = subtotal + taxAmount;
+                    const currency = currencySelect.value;
+                    const rateToAED = currencyRates[currency] || 1;
+                    const totalAED = total * rateToAED;
+
                     const data = {
                         customerId: document.getElementById('customer').value, customerName: document.getElementById('customer').options[document.getElementById('customer').selectedIndex].text,
                         vehicleId: document.getElementById('vehicle').value, vehicleName: document.getElementById('vehicle').options[document.getElementById('vehicle').selectedIndex].text,
                         startDate: new Date(document.getElementById('startDate').value), endDate: new Date(document.getElementById('endDate').value),
                         status: document.getElementById('status').value, invoiced: false,
                         financials: {
+                            currency: currency, currencySymbol: currencySelect.options[currencySelect.selectedIndex].dataset.symbol,
                             rentalRate: { description: "Daily Rental Rate", rate: rentalRate, days: days, total: rentalTotal },
-                            additionalCharges: charges, fines: fines, subtotal: subtotal, tax: { rate: taxRate, amount: taxAmount }, total: total
+                            categorizedCharges: charges, subtotal: subtotal, tax: { rate: taxRate, amount: taxAmount }, total: total, totalAED: totalAED
                         },
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
@@ -266,12 +268,13 @@
                         bookingsRef.add(data).then(() => { vehiclesRef.doc(data.vehicleId).update({ status: 'rented' }); closeModal(); });
                     }
                 });
+
                 bookingsRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
                     if (snapshot.empty) { bookingsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No bookings found.</td></tr>`; return; }
                     bookingsTableBody.innerHTML = snapshot.docs.map(doc => {
                         const b = { id: doc.id, ...doc.data() };
-                        const total = b.financials ? b.financials.total : 0;
-                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${b.customerName}</td><td class="p-4">${b.vehicleName}</td><td class="p-4">${new Date(b.startDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 font-medium">$${total.toFixed(2)}</td><td class="p-4 capitalize">${b.status}</td><td class="p-4 space-x-4"><button class="edit-btn text-cyan-400 hover:text-cyan-300" data-id="${b.id}"><i class="fas fa-edit"></i></button><button class="delete-btn text-red-500 hover:text-red-400" data-id="${b.id}"><i class="fas fa-trash"></i></button></td></tr>`;
+                        const total = b.financials ? b.financials.totalAED : 0;
+                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${b.customerName}</td><td class="p-4">${b.vehicleName}</td><td class="p-4">${new Date(b.startDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 font-medium">Dhs ${total.toFixed(2)}</td><td class="p-4 capitalize">${b.status}</td><td class="p-4 space-x-4"><button class="edit-btn text-cyan-400 hover:text-cyan-300" data-id="${b.id}"><i class="fas fa-edit"></i></button><button class="delete-btn text-red-500 hover:text-red-400" data-id="${b.id}"><i class="fas fa-trash"></i></button></td></tr>`;
                     }).join('');
                 });
                 bookingsTableBody.addEventListener('click', (e) => {
