@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - RentalFlow AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-200">
+        <!-- Sidebar -->
+        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition z-30">
+            <a href="/dashboard.html" class="flex items-center space-x-3"><img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full"><span class="text-2xl font-bold">RentalFlow</span></a>
+            <nav class="space-y-2">
+                <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+                <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
+                <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
+                <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
+                <a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+            </nav>
+        </div>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="flex justify-between items-center p-6 bg-white border-b">
+                <div class="flex items-center">
+                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Company Settings</h1>
+                </div>
+            </header>
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <div class="max-w-2xl mx-auto">
+                    <div id="success-message" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                        <strong class="font-bold">Success!</strong>
+                        <span class="block sm:inline">Your company profile has been updated.</span>
+                    </div>
+                    <div class="bg-white p-8 rounded-lg shadow-md">
+                        <form id="settings-form" class="space-y-6">
+                            <div>
+                                <label for="companyName" class="block text-sm font-medium text-gray-700">Company Name</label>
+                                <input type="text" id="companyName" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm" placeholder="Your Company LLC">
+                            </div>
+                             <div>
+                                <label for="taxNumber" class="block text-sm font-medium text-gray-700">Tax Registration Number (TRN)</label>
+                                <input type="text" id="taxNumber" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm" placeholder="e.g., 100012345678901">
+                            </div>
+                            <div>
+                                <label for="address" class="block text-sm font-medium text-gray-700">Company Address</label>
+                                <textarea id="address" rows="3" class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm" placeholder="123 Business Bay, Dubai, UAE"></textarea>
+                            </div>
+                            <div class="flex justify-end pt-4">
+                                <button type="submit" id="save-settings-button" class="bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700">
+                                    Save Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const db = firebase.firestore();
+                if (!db) {
+                    console.error("Database connection failed.");
+                    return;
+                }
+
+                const settingsForm = document.getElementById('settings-form');
+                const companyProfileRef = db.collection('company_profile').doc('main');
+                const successMessage = document.getElementById('success-message');
+
+                // Load existing settings
+                companyProfileRef.get().then(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('companyName').value = data.companyName || '';
+                        document.getElementById('taxNumber').value = data.taxNumber || '';
+                        document.getElementById('address').value = data.address || '';
+                    } else {
+                        console.log("No company profile found. A new one will be created on save.");
+                    }
+                }).catch(error => {
+                    console.error("Error fetching company profile:", error);
+                });
+
+                // Handle form submission
+                settingsForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const saveButton = document.getElementById('save-settings-button');
+                    saveButton.disabled = true;
+                    saveButton.textContent = 'Saving...';
+
+                    const data = {
+                        companyName: document.getElementById('companyName').value,
+                        taxNumber: document.getElementById('taxNumber').value,
+                        address: document.getElementById('address').value,
+                    };
+
+                    // Use .set with { merge: true } to create the document if it doesn't exist,
+                    // or update it if it does.
+                    companyProfileRef.set(data, { merge: true })
+                        .then(() => {
+                            console.log("Company profile saved successfully.");
+                            successMessage.classList.remove('hidden');
+                            setTimeout(() => successMessage.classList.add('hidden'), 3000);
+                        })
+                        .catch(error => {
+                            console.error("Error saving company profile: ", error);
+                            alert("Failed to save settings. See console for details.");
+                        })
+                        .finally(() => {
+                            saveButton.disabled = false;
+                            saveButton.textContent = 'Save Settings';
+                        });
+                });
+                
+                document.getElementById('menu-button').addEventListener('click', () => {
+                    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+                });
+
+            }, 200);
+        });
+    </script>
+</body>
+</html>
