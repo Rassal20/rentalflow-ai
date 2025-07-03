@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RentalFlow AI Dashboard</title>
+    <title>Dashboard | RentalFlow AI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         :root {
             --primary: #4361ee;
@@ -14,258 +15,170 @@
             --light: #f8f9fa;
         }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+        .fab {
+            @apply w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center 
+                   shadow-lg hover:bg-blue-700 transition-all duration-300;
         }
         
-        body {
-            display: flex;
-            min-height: 100vh;
-            background-color: #f0f2f5;
-            color: #333;
+        .fab-menu {
+            @apply absolute bottom-20 right-0 bg-white rounded-lg shadow-lg p-2 min-w-max 
+                   opacity-0 invisible transition-all duration-300 transform translate-y-4;
         }
         
-        /* SIDEBAR */
-        .sidebar {
-            width: 250px;
-            background: var(--dark);
-            color: white;
-            padding: 20px 0;
-            height: 100vh;
-            position: fixed;
-            transition: all 0.3s;
+        .fab:hover .fab-menu {
+            @apply opacity-100 visible translate-y-0;
         }
         
-        .logo {
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 1px solid #4a4e69;
-        }
-        
-        .logo h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-        
-        .nav-links {
-            padding: 20px 15px;
-        }
-        
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            color: #adb5bd;
-            text-decoration: none;
-            padding: 12px 15px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-        
-        .sidebar-link:hover, .sidebar-link.active {
-            background: var(--primary);
-            color: white;
-        }
-        
-        .sidebar-link i {
-            margin-right: 10px;
-            width: 24px;
-            text-align: center;
-        }
-        
-        /* MAIN CONTENT */
-        .main-content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 20px;
-        }
-        
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        }
-        
-        .stat-card h3 {
-            color: #6c757d;
-            font-size: 1rem;
-            margin-bottom: 10px;
-        }
-        
-        .stat-card .value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--dark);
-        }
-        
-        .recent-activity {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        
-        .recent-activity h2 {
-            margin-bottom: 20px;
-            color: var(--dark);
-            font-weight: 600;
-        }
-        
-        .activity-list {
-            list-style: none;
-        }
-        
-        .activity-item {
-            display: flex;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-        
-        .activity-icon {
-            background: #e9ecef;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            color: var(--primary);
-            flex-shrink: 0;
-        }
-        
-        .activity-content {
-            flex: 1;
-        }
-        
-        .activity-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .activity-time {
-            color: #6c757d;
-            font-size: 0.85rem;
-        }
-        
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-            
-            .logo h1, .sidebar-link span {
-                display: none;
-            }
-            
-            .main-content {
-                margin-left: 70px;
-            }
-            
-            .sidebar-link {
-                justify-content: center;
-            }
-            
-            .sidebar-link i {
-                margin-right: 0;
-            }
+        .fab-item {
+            @apply block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded;
         }
     </style>
 </head>
-<body>
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <div class="logo">
-            <h1>RentalFlow AI</h1>
-        </div>
-        <div class="nav-links">
-            <a href="dashboard.html" class="sidebar-link active">
-                <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
-            </a>
-            <a href="fleet.html" class="sidebar-link">
-                <i class="fas fa-car"></i> <span>Fleet</span>
-            </a>
-            <a href="bookings.html" class="sidebar-link">
-                <i class="fas fa-calendar-check"></i> <span>Bookings</span>
-            </a>
-            <a href="customers.html" class="sidebar-link">
-                <i class="fas fa-user-friends"></i> <span>Customers</span>
-            </a>
-            <a href="accounting.html" class="sidebar-link">
-                <i class="fas fa-calculator"></i> <span>Accounting</span>
-            </a>
-            <a href="invoices.html" class="sidebar-link">
-                <i class="fas fa-file-invoice-dollar"></i> <span>Invoices</span>
-            </a>
-            <a href="settings.html" class="sidebar-link">
-                <i class="fas fa-cog"></i> <span>Settings</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div class="main-content">
-        <header>
-            <h1>Dashboard Overview</h1>
-            <div class="user-profile">
-                <i class="fas fa-user-circle fa-2x" style="color: #4361ee;"></i>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 text-white">
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-xl font-bold">RentalFlow AI</h1>
             </div>
-        </header>
-
-        <div class="stats-container">
-            <div class="stat-card">
-                <h3>Total Vehicles</h3>
-                <div class="value" id="vehicle-count">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Active Bookings</h3>
-                <div class="value" id="booking-count">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Revenue Today</h3>
-                <div class="value" id="revenue">$0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Maintenance Due</h3>
-                <div class="value" id="maintenance-count">0</div>
-            </div>
+            <nav class="p-2">
+                <a href="dashboard.html" class="block py-2 px-4 rounded bg-gray-700">
+                    <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                </a>
+                <a href="fleet.html" class="block py-2 px-4 rounded hover:bg-gray-700">
+                    <i class="fas fa-car mr-2"></i> Fleet
+                </a>
+                <a href="bookings.html" class="block py-2 px-4 rounded hover:bg-gray-700">
+                    <i class="fas fa-calendar-check mr-2"></i> Bookings
+                </a>
+                <a href="customers.html" class="block py-2 px-4 rounded hover:bg-gray-700">
+                    <i class="fas fa-user-friends mr-2"></i> Customers
+                </a>
+                <a href="accounting.html" class="block py-2 px-4 rounded hover:bg-gray-700">
+                    <i class="fas fa-calculator mr-2"></i> Accounting
+                </a>
+                <a href="invoices.html" class="block py-2 px-4 rounded hover:bg-gray-700">
+                    <i class="fas fa-file-invoice-dollar mr-2"></i> Invoices
+                </a>
+                <a href="settings.html" class="block py-2 px-4 rounded hover:bg-gray-700">
+                    <i class="fas fa-cog mr-2"></i> Settings
+                </a>
+            </nav>
         </div>
 
-        <div class="recent-activity">
-            <h2>Recent Activity</h2>
-            <ul class="activity-list" id="activity-list">
-                <!-- Dynamic content will be inserted here -->
-            </ul>
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <div class="p-6">
+                <header class="flex justify-between items-center mb-8">
+                    <div>
+                        <h1 class="text-2xl font-bold">Dashboard Overview</h1>
+                        <p class="text-gray-600">Welcome back! Here's what's happening today.</p>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="mr-4">
+                            <i class="fas fa-bell text-gray-600 text-xl"></i>
+                        </div>
+                        <div class="flex items-center">
+                            <img src="https://i.pravatar.cc/40" alt="User" class="rounded-full mr-2">
+                            <span class="font-medium">Admin</span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                                <i class="fas fa-car text-blue-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Total Vehicles</p>
+                                <h2 class="text-2xl font-bold" id="vehicle-count">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-green-100 rounded-lg mr-4">
+                                <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Active Bookings</p>
+                                <h2 class="text-2xl font-bold" id="booking-count">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-purple-100 rounded-lg mr-4">
+                                <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Revenue Today</p>
+                                <h2 class="text-2xl font-bold" id="revenue">$0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex items-center">
+                            <div class="p-3 bg-yellow-100 rounded-lg mr-4">
+                                <i class="fas fa-tools text-yellow-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Maintenance Due</p>
+                                <h2 class="text-2xl font-bold" id="maintenance-count">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity & Stats -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Recent Activity -->
+                    <div class="lg:col-span-2 bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Recent Activity</h2>
+                            <a href="#" class="text-blue-600 hover:text-blue-800">View All</a>
+                        </div>
+                        <div class="space-y-4" id="activity-list">
+                            <!-- Activities will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Upcoming Bookings -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-bold mb-4">Upcoming Bookings</h2>
+                        <div class="space-y-4" id="upcoming-bookings">
+                            <!-- Bookings will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Floating Action Button -->
+        <div class="fixed bottom-8 right-8 z-10">
+            <div class="fab">
+                <i class="fas fa-plus text-xl"></i>
+                <div class="fab-menu">
+                    <a href="fleet.html" class="fab-item">
+                        <i class="fas fa-car mr-2"></i> Add Vehicle
+                    </a>
+                    <a href="customers.html" class="fab-item">
+                        <i class="fas fa-user-plus mr-2"></i> Add Customer
+                    </a>
+                    <a href="bookings.html" class="fab-item">
+                        <i class="fas fa-calendar-plus mr-2"></i> Add Booking
+                    </a>
+                    <a href="#" class="fab-item">
+                        <i class="fas fa-tools mr-2"></i> Add Maintenance
+                    </a>
+                    <a href="invoices.html" class="fab-item">
+                        <i class="fas fa-file-invoice mr-2"></i> Create Invoice
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -276,16 +189,17 @@
             bookingCount: document.getElementById('booking-count'),
             revenue: document.getElementById('revenue'),
             maintenanceCount: document.getElementById('maintenance-count'),
-            activityList: document.getElementById('activity-list')
+            activityList: document.getElementById('activity-list'),
+            upcomingBookings: document.getElementById('upcoming-bookings')
         };
 
         // Icons for activity types
         const activityIcons = {
-            vehicle: 'fas fa-car',
-            booking: 'fas fa-calendar-check',
-            maintenance: 'fas fa-tools',
-            invoice: 'fas fa-file-invoice',
-            customer: 'fas fa-user-plus'
+            vehicle: 'fas fa-car bg-blue-100 text-blue-600',
+            booking: 'fas fa-calendar-check bg-green-100 text-green-600',
+            maintenance: 'fas fa-tools bg-yellow-100 text-yellow-600',
+            invoice: 'fas fa-file-invoice bg-purple-100 text-purple-600',
+            customer: 'fas fa-user-plus bg-indigo-100 text-indigo-600'
         };
 
         // Fetch data from API
@@ -300,6 +214,28 @@
             }
         }
 
+        // Format date
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        // Format time
+        function formatTime(timestamp) {
+            if (!timestamp) return 'Just now';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            });
+        }
+
         // Update dashboard stats
         async function updateDashboardStats() {
             const [vehicles, bookings] = await Promise.all([
@@ -309,60 +245,104 @@
             
             if (vehicles) {
                 elements.vehicleCount.textContent = vehicles.length;
-                // Calculate maintenance due (example)
-                const maintenanceDue = vehicles.filter(v => 
-                    v.lastMaintained && 
-                    (new Date() - new Date(v.lastMaintained)) > 30 * 24 * 60 * 60 * 1000
-                ).length;
+                
+                // Calculate maintenance due (vehicles not maintained in last 30 days)
+                const maintenanceDue = vehicles.filter(v => {
+                    if (!v.lastMaintained) return true;
+                    const lastMaintained = v.lastMaintained.toDate ? 
+                        v.lastMaintained.toDate() : new Date(v.lastMaintained);
+                    const diffDays = (new Date() - lastMaintained) / (1000 * 60 * 60 * 24);
+                    return diffDays > 30;
+                }).length;
+                
                 elements.maintenanceCount.textContent = maintenanceDue;
             }
             
             if (bookings) {
-                const activeBookings = bookings.filter(b => 
-                    new Date(b.startDate) <= new Date() && 
-                    new Date(b.endDate) >= new Date()
-                );
+                // Active bookings (current date between start and end date)
+                const activeBookings = bookings.filter(b => {
+                    const today = new Date();
+                    const startDate = b.startDate ? new Date(b.startDate) : new Date();
+                    const endDate = b.endDate ? new Date(b.endDate) : new Date();
+                    return today >= startDate && today <= endDate;
+                });
+                
                 elements.bookingCount.textContent = activeBookings.length;
                 
-                // Calculate today's revenue (example)
+                // Calculate today's revenue
                 const todayRevenue = activeBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
                 elements.revenue.textContent = `$${todayRevenue.toFixed(2)}`;
+                
+                // Get upcoming bookings (next 7 days)
+                const upcomingBookings = bookings.filter(b => {
+                    const startDate = b.startDate ? new Date(b.startDate) : new Date();
+                    const today = new Date();
+                    const diffDays = (startDate - today) / (1000 * 60 * 60 * 24);
+                    return diffDays > 0 && diffDays <= 7;
+                }).slice(0, 5);
+                
+                // Render upcoming bookings
+                renderUpcomingBookings(upcomingBookings);
             }
         }
 
         // Render recent activity
         function renderRecentActivity(activities) {
             if (!activities || activities.length === 0) {
-                elements.activityList.innerHTML = '<li class="activity-item">No recent activity</li>';
+                elements.activityList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-3xl mb-2"></i>
+                        <p>No recent activity</p>
+                    </div>
+                `;
                 return;
             }
             
             elements.activityList.innerHTML = activities
                 .slice(0, 5)
                 .map(activity => `
-                    <li class="activity-item">
-                        <div class="activity-icon">
-                            <i class="${activityIcons[activity.type] || 'fas fa-info-circle'}"></i>
+                    <div class="flex items-start py-3 border-b border-gray-100 last:border-0">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${activityIcons[activity.type] || 'bg-gray-100 text-gray-600'}">
+                            <i class="${activity.icon || 'fas fa-info-circle'}"></i>
                         </div>
-                        <div class="activity-content">
-                            <div class="activity-title">${activity.title}</div>
-                            <div class="activity-desc">${activity.description}</div>
-                            <div class="activity-time">${formatTime(activity.timestamp)}</div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-medium" x-text="${activity.title}"></h3>
+                            <p class="text-gray-600 text-sm" x-text="${activity.description}"></p>
+                            <p class="text-gray-400 text-xs mt-1" x-text="${formatTime(activity.timestamp)}"></p>
                         </div>
-                    </li>
+                    </div>
                 `)
                 .join('');
         }
 
-        // Format timestamp
-        function formatTime(timestamp) {
-            if (!timestamp) return 'Just now';
-            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-            return new Intl.DateTimeFormat('en-US', {
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: true
-            }).format(date);
+        // Render upcoming bookings
+        function renderUpcomingBookings(bookings) {
+            if (!bookings || bookings.length === 0) {
+                elements.upcomingBookings.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-calendar-alt text-3xl mb-2"></i>
+                        <p>No upcoming bookings</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            elements.upcomingBookings.innerHTML = bookings
+                .map(booking => `
+                    <div class="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                        <div class="flex justify-between">
+                            <h3 class="font-medium" x-text="${booking.customerName || 'Customer'}"></h3>
+                            <span class="text-sm font-semibold">AED ${booking.totalAmount?.toFixed(2) || '0.00'}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mt-1" x-text="${booking.vehicleModel || 'Vehicle'}"></p>
+                        <div class="flex justify-between text-sm text-gray-500 mt-2">
+                            <span x-text="${formatDate(booking.startDate)}"></span>
+                            <span>to</span>
+                            <span x-text="${formatDate(booking.endDate)}"></span>
+                        </div>
+                    </div>
+                `)
+                .join('');
         }
 
         // Initialize dashboard
@@ -373,27 +353,38 @@
             const recentActivities = [
                 {
                     type: 'vehicle',
+                    icon: 'fas fa-car',
                     title: 'New vehicle added',
                     description: 'Toyota Camry 2023',
                     timestamp: new Date(Date.now() - 10 * 60 * 1000)
                 },
                 {
                     type: 'booking',
+                    icon: 'fas fa-calendar-check',
                     title: 'Booking confirmed',
                     description: '#BK-1024 - John Doe',
                     timestamp: new Date(Date.now() - 60 * 60 * 1000)
                 },
                 {
                     type: 'maintenance',
+                    icon: 'fas fa-tools',
                     title: 'Maintenance completed',
                     description: 'Ford F-150 (Oil change)',
                     timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000)
                 },
                 {
                     type: 'invoice',
+                    icon: 'fas fa-file-invoice',
                     title: 'Invoice generated',
                     description: '#INV-2058 - $850.00',
                     timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000)
+                },
+                {
+                    type: 'customer',
+                    icon: 'fas fa-user-plus',
+                    title: 'New customer added',
+                    description: 'Sarah Johnson',
+                    timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000)
                 }
             ];
             
