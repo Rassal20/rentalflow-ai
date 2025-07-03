@@ -7,21 +7,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        body.loading { visibility: hidden; }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <div class="flex h-screen bg-gray-200">
+<body class="bg-gray-100 loading">
+    <div id="app-container" class="flex h-screen bg-gray-200" style="display: none;">
         <!-- Sidebar -->
         <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition z-30">
-            <a href="/dashboard" class="flex items-center space-x-3"><img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full"><span class="text-2xl font-bold">RentalFlow</span></a>
+            <a href="/dashboard" class="flex items-center space-x-3">
+                <img id="company-logo-sidebar" src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full">
+                <span id="company-name-sidebar" class="text-2xl font-bold">RentalFlow</span>
+            </a>
             <nav class="space-y-2">
                 <a href="/dashboard" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
                 <a href="/bookings" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
                 <a href="/customers" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
                 <a href="/fleet" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
-                <a href="/accounting" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-invoice-dollar w-6"></i><span class="ml-3">Accounting</span></a>
                 <a href="/invoices" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
+                <a href="/settings" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
             </nav>
+            <div class="absolute bottom-6 left-6 right-6">
+                <button id="sign-out-button" class="w-full flex items-center justify-center bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-red-700 transition"><i class="fas fa-sign-out-alt w-6"></i><span class="ml-3">Sign Out</span></button>
+            </div>
         </div>
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
@@ -36,10 +45,8 @@
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead>
-                                <tr class="bg-gray-50 border-b"><th class="p-4">Customer</th><th class="p-4">Vehicle</th><th class="p-4">Dates</th><th class="p-4">Total</th><th class="p-4">Status</th><th class="p-4">Actions</th></tr>
-                            </thead>
-                            <tbody id="bookings-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Initializing...</td></tr></tbody>
+                            <thead><tr class="bg-gray-50 border-b"><th class="p-4">Customer</th><th class="p-4">Vehicle</th><th class="p-4">Dates</th><th class="p-4">Total</th><th class="p-4">Status</th><th class="p-4">Actions</th></tr></thead>
+                            <tbody id="bookings-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -49,7 +56,7 @@
     <!-- Add/Edit Booking Modal -->
     <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-4xl mx-auto rounded-lg shadow-lg z-50 max-h-screen overflow-y-auto">
-            <div class="flex justify-between items-center p-4 border-b sticky top-0 bg-white"><h3 id="modal-title" class="text-xl font-semibold">Add New Booking</h3><button id="close-modal-button" class="text-gray-500 hover:text-gray-800">&times;</button></div>
+            <div class="flex justify-between items-center p-4 border-b sticky top-0 bg-white"><h3 id="modal-title" class="text-xl font-semibold"></h3><button id="close-modal-button" class="text-gray-500 hover:text-gray-800">&times;</button></div>
             <form id="booking-form" class="p-6 space-y-6">
                 <input type="hidden" id="booking-id">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -84,27 +91,62 @@
             </form>
         </div>
     </div>
+    <div id="loader" class="flex items-center justify-center h-screen"><i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i><p class="ml-4 text-xl">Authenticating...</p></div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
+            const auth = firebase.auth();
+            const loader = document.getElementById('loader');
+            const appContainer = document.getElementById('app-container');
+
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    loader.style.display = 'none';
+                    appContainer.style.display = 'flex';
+                    document.body.classList.remove('loading');
+                    initializeApp(user);
+                } else {
+                    window.location.href = '/';
+                }
+            });
+
+            function initializeApp(user) {
                 const db = firebase.firestore();
-                if (!db) { document.getElementById('bookings-table-body').innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-500"><strong>DB Connection Failed.</strong> Check /js/firebase-init.js</td></tr>`; return; }
-                const bookingsRef = db.collection('bookings');
+                const companyId = user.uid;
+                const bookingsRef = db.collection('companies').doc(companyId).collection('bookings');
+                const customersRef = db.collection('companies').doc(companyId).collection('customers');
+                const vehiclesRef = db.collection('companies').doc(companyId).collection('vehicles');
+
                 const addBookingButton = document.getElementById('add-booking-button');
                 const bookingModal = document.getElementById('booking-modal');
                 const bookingForm = document.getElementById('booking-form');
                 const chargesContainer = document.getElementById('additional-charges-container');
                 const bookingsTableBody = document.getElementById('bookings-table-body');
+
+                // --- Sidebar and Branding ---
+                db.collection('companies').doc(companyId).get().then(doc => {
+                    if (doc.exists) {
+                        const companyData = doc.data();
+                        document.getElementById('company-name-sidebar').textContent = companyData.companyName;
+                        if (companyData.logoUrl) {
+                            document.getElementById('company-logo-sidebar').src = companyData.logoUrl;
+                        }
+                    }
+                });
+                document.getElementById('sign-out-button').addEventListener('click', () => auth.signOut());
+                document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+                
                 const openModal = (mode, booking = {}) => {
                     bookingForm.reset();
                     chargesContainer.innerHTML = '';
                     populateDropdowns(booking.vehicleId);
+                    document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Booking' : 'Add New Booking';
+                    document.getElementById('booking-id').value = mode === 'edit' ? booking.id : '';
                     if (mode === 'edit' && booking.financials) {
-                        document.getElementById('modal-title').textContent = 'Edit Booking';
-                        document.getElementById('booking-id').value = booking.id;
                         document.getElementById('customer').value = booking.customerId;
                         document.getElementById('vehicle').value = booking.vehicleId;
                         document.getElementById('startDate').value = new Date(booking.startDate.seconds * 1000).toISOString().slice(0, 16);
@@ -115,7 +157,7 @@
                         document.getElementById('rentalRate').value = booking.financials.rentalRate.rate;
                         document.getElementById('taxRate').value = (booking.financials.tax.rate * 100);
                         if(booking.financials.additionalCharges) { booking.financials.additionalCharges.forEach(c => addChargeRow(c.description, c.amount)); }
-                    } else { document.getElementById('modal-title').textContent = 'Add New Booking'; document.getElementById('booking-id').value = ''; addChargeRow(); }
+                    } else { addChargeRow(); }
                     updateCalculations();
                     bookingModal.classList.remove('hidden');
                 };
@@ -149,12 +191,12 @@
                 const populateDropdowns = async (editingVehicleId) => {
                     const customerSelect = document.getElementById('customer');
                     const vehicleSelect = document.getElementById('vehicle');
-                    const customers = await db.collection('customers').orderBy('fullName').get();
+                    const customers = await customersRef.orderBy('fullName').get();
                     customerSelect.innerHTML = '<option value="">Select Customer</option>' + customers.docs.map(d => `<option value="${d.id}">${d.data().fullName}</option>`).join('');
-                    const vehicles = await db.collection('vehicles').where('status', '==', 'available').get();
+                    const vehicles = await vehiclesRef.where('status', '==', 'available').get();
                     let vehicleOptions = '<option value="">Select Vehicle</option>' + vehicles.docs.map(d => `<option value="${d.id}">${d.data().brand} ${d.data().model}</option>`).join('');
                     if (editingVehicleId && !vehicles.docs.some(d => d.id === editingVehicleId)) {
-                        const vDoc = await db.collection('vehicles').doc(editingVehicleId).get();
+                        const vDoc = await vehiclesRef.doc(editingVehicleId).get();
                         if (vDoc.exists) vehicleOptions += `<option value="${vDoc.id}">${vDoc.data().brand} ${vDoc.data().model} (Rented)</option>`;
                     }
                     vehicleSelect.innerHTML = vehicleOptions;
@@ -191,7 +233,7 @@
                     if (id) { bookingsRef.doc(id).update(data).then(closeModal); } 
                     else {
                         data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                        bookingsRef.add(data).then(() => { db.collection('vehicles').doc(data.vehicleId).update({ status: 'rented' }); closeModal(); });
+                        bookingsRef.add(data).then(() => { vehiclesRef.doc(data.vehicleId).update({ status: 'rented' }); closeModal(); });
                     }
                 });
                 bookingsRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
@@ -208,13 +250,13 @@
                     const id = button.dataset.id;
                     if (button.classList.contains('delete-btn')) {
                         if (confirm('Are you sure?')) {
-                            bookingsRef.doc(id).get().then(doc => { if (doc.exists) db.collection('vehicles').doc(doc.data().vehicleId).update({ status: 'available' }); }).then(() => bookingsRef.doc(id).delete());
+                            bookingsRef.doc(id).get().then(doc => { if (doc.exists) vehiclesRef.doc(doc.data().vehicleId).update({ status: 'available' }); }).then(() => bookingsRef.doc(id).delete());
                         }
                     } else if (button.classList.contains('edit-btn')) {
                         bookingsRef.doc(id).get().then(doc => { if (doc.exists) openModal('edit', { id: doc.id, ...doc.data() }); });
                     }
                 });
-            }, 200);
+            }
         });
     </script>
 </body>

@@ -4,310 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - RentalFlow AI</title>
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Custom scrollbar for better aesthetics */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        /* Simple transition for sidebar links */
-        .sidebar-link {
-            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-        }
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        /* Hide body until auth check is complete to prevent flicker */
+        body.loading { visibility: hidden; }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 loading">
 
-    <div class="flex h-screen bg-gray-200">
+    <div id="app-container" class="flex h-screen bg-gray-200" style="display: none;">
         <!-- Sidebar -->
-        <div class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-30" id="sidebar">
-            <!-- Logo -->
-            <a href="/dashboard.html" class="flex items-center space-x-3">
-                <!-- IMPORTANT: Replace this with your company logo -->
-                <img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full">
-                <span class="text-2xl font-bold">RentalFlow</span>
+        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition z-30">
+            <a href="/dashboard" class="flex items-center space-x-3">
+                <img id="company-logo-sidebar" src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full">
+                <span id="company-name-sidebar" class="text-2xl font-bold">RentalFlow</span>
             </a>
-
-            <!-- Navigation -->
             <nav class="space-y-2">
-                <a href="/dashboard.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white">
-                    <i class="fas fa-tachometer-alt w-6"></i>
-                    <span class="ml-3">Dashboard</span>
-                </a>
-                <a href="/bookings.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
-                    <i class="fas fa-calendar-alt w-6"></i>
-                    <span class="ml-3">Bookings</span>
-                </a>
-                <a href="/customers.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
-                    <i class="fas fa-users w-6"></i>
-                    <span class="ml-3">Customers</span>
-                </a>
-                <a href="/fleet.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
-                    <i class="fas fa-car w-6"></i>
-                    <span class="ml-3">Vehicle Fleet</span>
-                </a>
-                <a href="/accounting.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
-                    <i class="fas fa-file-invoice-dollar w-6"></i>
-                    <span class="ml-3">Accounting</span>
-                </a>
-                 <a href="/invoices.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
-                    <i class="fas fa-file-alt w-6"></i>
-                    <span class="ml-3">Invoices</span>
-                </a>
+                <a href="/dashboard" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+                <a href="/bookings" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
+                <a href="/customers" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
+                <a href="/fleet" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                <a href="/invoices" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
+                <a href="/settings" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
             </nav>
+            <div class="absolute bottom-6 left-6 right-6">
+                <button id="sign-out-button" class="w-full flex items-center justify-center bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-red-700 transition">
+                    <i class="fas fa-sign-out-alt w-6"></i><span class="ml-3">Sign Out</span>
+                </button>
+            </div>
         </div>
-
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Header -->
             <header class="flex justify-between items-center p-6 bg-white border-b">
                 <div class="flex items-center">
-                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden">
-                        <i class="fas fa-bars text-2xl"></i>
-                    </button>
+                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
                     <h1 class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Dashboard</h1>
                 </div>
-
-                <!-- Quick Actions Dropdown -->
-                <div class="relative">
-                    <button id="quick-actions-button" class="flex items-center bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">
-                        <i class="fas fa-plus mr-2"></i>
-                        Add Event
-                    </button>
-                    <div id="quick-actions-menu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20">
-                        <a href="/bookings.html?action=add" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100"><i class="fas fa-calendar-plus w-6 mr-2"></i>Add Booking</a>
-                        <a href="/fleet.html?action=add" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100"><i class="fas fa-car w-6 mr-2"></i>Add Vehicle</a>
-                        <a href="/customers.html?action=add" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100"><i class="fas fa-user-plus w-6 mr-2"></i>Add Customer</a>
-                        <a href="#" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100"><i class="fas fa-tools w-6 mr-2"></i>Log Maintenance</a>
-                    </div>
+                <div id="user-info" class="text-right">
+                    <p class="font-semibold text-gray-800" id="user-email"></p>
+                    <p class="text-sm text-gray-500">Company Admin</p>
                 </div>
             </header>
-
-            <!-- Content Body -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
                 <!-- Stat Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Total Bookings</p>
-                            <p id="total-bookings" class="text-3xl font-bold text-gray-800">0</p>
-                        </div>
-                        <div class="bg-blue-100 text-blue-600 rounded-full p-3">
-                            <i class="fas fa-calendar-check text-2xl"></i>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Vehicles Available</p>
-                            <p id="vehicles-available" class="text-3xl font-bold text-gray-800">0</p>
-                        </div>
-                        <div class="bg-green-100 text-green-600 rounded-full p-3">
-                            <i class="fas fa-car text-2xl"></i>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Customers</p>
-                            <p id="total-customers" class="text-3xl font-bold text-gray-800">0</p>
-                        </div>
-                        <div class="bg-yellow-100 text-yellow-600 rounded-full p-3">
-                            <i class="fas fa-users text-2xl"></i>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Needs Maintenance</p>
-                            <p id="needs-maintenance" class="text-3xl font-bold text-gray-800">0</p>
-                        </div>
-                        <div class="bg-red-100 text-red-600 rounded-full p-3">
-                            <i class="fas fa-tools text-2xl"></i>
-                        </div>
-                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm text-gray-500">Total Bookings</p><p id="total-bookings" class="text-3xl font-bold">0</p></div>
+                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm text-gray-500">Vehicles Available</p><p id="vehicles-available" class="text-3xl font-bold">0</p></div>
+                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm text-gray-500">Total Customers</p><p id="total-customers" class="text-3xl font-bold">0</p></div>
+                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm text-gray-500">Needs Maintenance</p><p id="needs-maintenance" class="text-3xl font-bold">0</p></div>
                 </div>
-
                 <!-- Recent Bookings Table -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Recent Bookings</h3>
+                    <h3 class="text-xl font-semibold mb-4">Recent Bookings</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead>
-                                <tr class="bg-gray-50 border-b">
-                                    <th class="p-4 font-medium text-gray-600">Customer</th>
-                                    <th class="p-4 font-medium text-gray-600">Vehicle</th>
-                                    <th class="p-4 font-medium text-gray-600">Start Date</th>
-                                    <th class="p-4 font-medium text-gray-600">End Date</th>
-                                    <th class="p-4 font-medium text-gray-600">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recent-bookings-table">
-                                <!-- JS will populate this -->
-                                <tr>
-                                    <td colspan="5" class="text-center p-8 text-gray-500">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i> Loading recent bookings...
-                                    </td>
-                                </tr>
-                            </tbody>
+                            <thead><tr class="bg-gray-50 border-b"><th class="p-4">Customer</th><th class="p-4">Vehicle</th><th class="p-4">Dates</th><th class="p-4">Status</th></tr></thead>
+                            <tbody id="recent-bookings-table"><tr><td colspan="4" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
             </main>
         </div>
     </div>
+    <div id="loader" class="flex items-center justify-center h-screen"><i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i><p class="ml-4 text-xl">Authenticating...</p></div>
 
-    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <!-- Add SDKs for Firebase products you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <!-- Your custom Firebase configuration and initialization -->
     <script src="/js/firebase-init.js"></script>
-
-    <!-- Page specific script -->
     <script>
-        // --- UI Interaction Script ---
-
-        const menuButton = document.getElementById('menu-button');
-        const sidebar = document.getElementById('sidebar');
-        const quickActionsButton = document.getElementById('quick-actions-button');
-        const quickActionsMenu = document.getElementById('quick-actions-menu');
-
-        // Toggle sidebar on mobile
-        menuButton.addEventListener('click', () => {
-            sidebar.classList.toggle('-translate-x-full');
-        });
-
-        // Toggle quick actions dropdown
-        quickActionsButton.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent click from closing menu immediately
-            quickActionsMenu.classList.toggle('hidden');
-        });
-
-        // Close dropdown if clicking outside
-        document.addEventListener('click', (event) => {
-            if (!quickActionsButton.contains(event.target) && !quickActionsMenu.contains(event.target)) {
-                quickActionsMenu.classList.add('hidden');
-            }
-        });
-
-
-        // --- Firestore Data Loading ---
-
-        // Wait for Firestore to be initialized
         document.addEventListener('DOMContentLoaded', () => {
-            if (typeof db !== 'undefined') {
-                // Fetch and display stats
-                fetchDashboardStats();
-                // Fetch and display recent bookings
-                fetchRecentBookings();
-            } else {
-                console.error("Firestore is not initialized. Check firebase-init.js");
-                // Optionally display an error message on the UI
+            const auth = firebase.auth();
+            const loader = document.getElementById('loader');
+            const appContainer = document.getElementById('app-container');
+            
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // User is signed in.
+                    loader.style.display = 'none';
+                    appContainer.style.display = 'flex';
+                    document.body.classList.remove('loading');
+                    initializeApp(user);
+                } else {
+                    // No user is signed in. Redirect to login page.
+                    window.location.href = '/';
+                }
+            });
+
+            function initializeApp(user) {
+                const db = firebase.firestore();
+                const companyId = user.uid; // For owners, the company ID is their user ID.
+
+                // --- UI Elements ---
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('sign-out-button').addEventListener('click', () => {
+                    auth.signOut().then(() => {
+                        window.location.href = '/';
+                    });
+                });
+                document.getElementById('menu-button').addEventListener('click', () => {
+                    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+                });
+
+                // --- Fetch Company-Specific Data ---
+                
+                // Fetch Company Profile for branding
+                const companyRef = db.collection('companies').doc(companyId);
+                companyRef.get().then(doc => {
+                    if (doc.exists) {
+                        const companyData = doc.data();
+                        document.getElementById('company-name-sidebar').textContent = companyData.companyName;
+                        if (companyData.logoUrl) {
+                            document.getElementById('company-logo-sidebar').src = companyData.logoUrl;
+                        }
+                    }
+                });
+
+                // Fetch dashboard stats from subcollections
+                const bookingsRef = companyRef.collection('bookings');
+                const vehiclesRef = companyRef.collection('vehicles');
+                const customersRef = companyRef.collection('customers');
+
+                bookingsRef.get().then(snap => { document.getElementById('total-bookings').textContent = snap.size; });
+                customersRef.get().then(snap => { document.getElementById('total-customers').textContent = snap.size; });
+                vehiclesRef.onSnapshot(snap => {
+                    let available = 0;
+                    let maintenance = 0;
+                    snap.forEach(doc => {
+                        const vehicle = doc.data();
+                        if (vehicle.status === 'available') available++;
+                        if (vehicle.status === 'maintenance') maintenance++;
+                    });
+                    document.getElementById('vehicles-available').textContent = available;
+                    document.getElementById('needs-maintenance').textContent = maintenance;
+                });
+
+                // Fetch recent bookings
+                const bookingsTable = document.getElementById('recent-bookings-table');
+                bookingsRef.orderBy('createdAt', 'desc').limit(5).onSnapshot(snapshot => {
+                    if (snapshot.empty) {
+                        bookingsTable.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-gray-500">No recent bookings.</td></tr>`;
+                        return;
+                    }
+                    bookingsTable.innerHTML = snapshot.docs.map(doc => {
+                        const b = doc.data();
+                        return `<tr class="border-b hover:bg-gray-50">
+                                    <td class="p-4">${b.customerName}</td>
+                                    <td class="p-4">${b.vehicleName}</td>
+                                    <td class="p-4">${new Date(b.startDate.seconds * 1000).toLocaleDateString()}</td>
+                                    <td class="p-4">${b.status}</td>
+                                </tr>`;
+                    }).join('');
+                });
             }
         });
-
-        function fetchDashboardStats() {
-            const bookingsRef = db.collection('bookings');
-            const vehiclesRef = db.collection('vehicles');
-            const customersRef = db.collection('customers');
-
-            // Get total bookings
-            bookingsRef.get().then(snapshot => {
-                document.getElementById('total-bookings').textContent = snapshot.size;
-            }).catch(error => console.error("Error getting bookings count: ", error));
-
-            // Get total customers
-            customersRef.get().then(snapshot => {
-                document.getElementById('total-customers').textContent = snapshot.size;
-            }).catch(error => console.error("Error getting customers count: ", error));
-
-            // Get vehicle stats
-            vehiclesRef.get().then(snapshot => {
-                let available = 0;
-                let maintenance = 0;
-                snapshot.forEach(doc => {
-                    const vehicle = doc.data();
-                    if (vehicle.status === 'available') {
-                        available++;
-                    }
-                    if (vehicle.status === 'maintenance') {
-                        maintenance++;
-                    }
-                });
-                document.getElementById('vehicles-available').textContent = available;
-                document.getElementById('needs-maintenance').textContent = maintenance;
-            }).catch(error => console.error("Error getting vehicle stats: ", error));
-        }
-
-        function fetchRecentBookings() {
-            const bookingsTable = document.getElementById('recent-bookings-table');
-            // Query for the last 5 bookings, ordered by creation date
-            db.collection('bookings').orderBy('createdAt', 'desc').limit(5).get().then(snapshot => {
-                if (snapshot.empty) {
-                    bookingsTable.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-500">No recent bookings found.</td></tr>`;
-                    return;
-                }
-
-                let bookingsHtml = '';
-                snapshot.forEach(doc => {
-                    const booking = doc.data();
-                    const statusColor = getStatusColor(booking.status);
-                    
-                    bookingsHtml += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-4">${booking.customerName || 'N/A'}</td>
-                            <td class="p-4">${booking.vehicleName || 'N/A'}</td>
-                            <td class="p-4">${booking.startDate ? new Date(booking.startDate.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-                            <td class="p-4">${booking.endDate ? new Date(booking.endDate.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-                            <td class="p-4">
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">
-                                    ${booking.status || 'Unknown'}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                });
-                bookingsTable.innerHTML = bookingsHtml;
-
-            }).catch(error => {
-                console.error("Error fetching recent bookings: ", error);
-                bookingsTable.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-500">Error loading bookings.</td></tr>`;
-            });
-        }
-
-        function getStatusColor(status) {
-            switch (status) {
-                case 'confirmed':
-                    return 'bg-green-100 text-green-800';
-                case 'pending':
-                    return 'bg-yellow-100 text-yellow-800';
-                case 'cancelled':
-                    return 'bg-red-100 text-red-800';
-                case 'completed':
-                    return 'bg-blue-100 text-blue-800';
-                default:
-                    return 'bg-gray-100 text-gray-800';
-            }
-        }
     </script>
-
 </body>
 </html>
