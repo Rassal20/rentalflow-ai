@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Detail</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+        @media print {
+            body { margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .invoice-box {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="loader" class="flex items-center justify-center h-screen">
+        <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
+        <span class="ml-4 text-xl text-gray-600">Loading Invoice...</span>
+    </div>
+
+    <div id="invoice-content" class="hidden">
+        <div class="bg-gray-100 flex justify-center items-start min-h-screen p-4 sm:p-8 no-print">
+             <div class="w-full max-w-4xl">
+                <div class="flex justify-between items-center mb-4">
+                    <a href="/invoices.html" class="text-blue-600 hover:underline">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Invoices
+                    </a>
+                    <button onclick="window.print()" class="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">
+                        <i class="fas fa-print mr-2"></i>Print / Save as PDF
+                    </button>
+                </div>
+                <div id="invoice-box" class="invoice-box bg-white rounded-lg shadow-lg p-8 sm:p-12">
+                    <!-- Invoice content will be populated by JS -->
+                </div>
+             </div>
+        </div>
+        <div class="hidden print:block">
+            <div id="printable-invoice" class="bg-white p-12"></div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof db === 'undefined') { return; }
+
+            const loader = document.getElementById('loader');
+            const invoiceContent = document.getElementById('invoice-content');
+            const invoiceBox = document.getElementById('invoice-box');
+            const printableInvoice = document.getElementById('printable-invoice');
+
+            const params = new URLSearchParams(window.location.search);
+            const invoiceId = params.get('id');
+
+            if (!invoiceId) {
+                invoiceBox.innerHTML = '<p class="text-red-500 text-center">No invoice ID provided.</p>';
+                loader.classList.add('hidden');
+                invoiceContent.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const invoicePromise = db.collection('invoices').doc(invoiceId).get();
+                const companyProfilePromise = db.collection('company_profile').doc('main').get();
+                const [invoiceDoc, companyDoc] = await Promise.all([invoicePromise, companyProfilePromise]);
+
+                if (!invoiceDoc.exists) throw new Error('Invoice not found.');
+
+                const invoice = invoiceDoc.data();
+                const company = companyDoc.exists ? companyDoc.data() : {
+                    companyName: 'Your Company Name',
+                    logoUrl: 'https://placehold.co/200x80?text=Your+Logo',
+                    address: '123 Business Rd, City, Country',
+                    email: 'contact@yourcompany.com',
+                    phone: '+1 234 567 890'
+                };
+
+                // --- Build Invoice HTML ---
+                let itemsHtml = '';
+                invoice.items.forEach(item => {
+                    itemsHtml += `
+                        <tr class="border-b">
+                            <td class="py-3 pr-3">${item.description}</td>
+                            <td class="py-3 pl-3 text-right">$${item.total.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                const invoiceHtml = `
+                    <div class="flex justify-between items-start pb-8 border-b">
+                        <div>
+                            <img src="${company.logoUrl}" alt="Company Logo" class="h-16 mb-4" onerror="this.onerror=null;this.src='https://placehold.co/200x80?text=Logo';">
+                            <h2 class="text-2xl font-bold text-gray-800">${company.companyName}</h2>
+                            <p class="text-gray-500">${company.address || ''}</p>
+                            <p class="text-gray-500">${company.email || ''} | ${company.phone || ''}</p>
+                        </div>
+                        <div class="text-right">
+                            <h1 class="text-4xl font-bold text-gray-800 uppercase">Invoice</h1>
+                            <p class="text-gray-500"># ${invoice.invoiceNumber}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-start py-8">
+                        <div>
+                            <h3 class="font-semibold text-gray-800 mb-1">Bill To</h3>
+                            <p class="font-bold text-gray-700">${invoice.customer.name}</p>
+                            <p class="text-gray-500">${invoice.customer.address || ''}</p>
+                            <p class="text-gray-500">${invoice.customer.email}</p>
+                        </div>
+                        <div class="text-right">
+                            <p><span class="font-semibold text-gray-800">Issue Date:</span> ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}</p>
+                            <p><span class="font-semibold text-gray-800">Due Date:</span> ${new Date(invoice.dueDate.seconds * 1000).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <table class="w-full text-left mb-8">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-3 font-semibold text-gray-700">Description</th>
+                                <th class="p-3 font-semibold text-gray-700 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                    <div class="flex justify-end">
+                        <div class="w-full max-w-xs">
+                            <div class="flex justify-between text-gray-600">
+                                <span>Subtotal</span>
+                                <span>$${invoice.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between text-gray-600">
+                                <span>Tax</span>
+                                <span>$${invoice.taxAmount.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between font-bold text-gray-800 text-xl mt-2 pt-2 border-t">
+                                <span>Total Due</span>
+                                <span>$${invoice.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                invoiceBox.innerHTML = invoiceHtml;
+                printableInvoice.innerHTML = invoiceHtml;
+
+            } catch (error) {
+                console.error("Error loading invoice:", error);
+                invoiceBox.innerHTML = `<p class="text-red-500 text-center">Error: ${error.message}</p>`;
+            } finally {
+                loader.classList.add('hidden');
+                invoiceContent.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

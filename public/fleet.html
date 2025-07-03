@@ -1,309 +1,307 @@
 <!DOCTYPE html>
-<html lang="en" x-data="fleetController()" x-init="loadFleet()">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fleet Management | RentalFlow AI</title>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Vehicle Fleet - RentalFlow AI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --success: #4cc9f0;
-            --dark: #2b2d42;
-            --light: #f8f9fa;
-        }
-        
-        .status-badge {
-            @apply px-3 py-1 rounded-full text-xs font-semibold;
-        }
-        
-        .status-available {
-            @apply bg-green-100 text-green-800;
-        }
-        
-        .status-on-rent {
-            @apply bg-yellow-100 text-yellow-800;
-        }
-        
-        .status-maintenance {
-            @apply bg-red-100 text-red-800;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-container { transition: transform 0.3s ease; }
     </style>
 </head>
-<body class="bg-gray-50">
-    <div class="flex h-screen">
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-200">
         <!-- Sidebar -->
-        <div class="w-64 bg-gray-800 text-white">
-            <div class="p-4 border-b border-gray-700">
-                <h1 class="text-xl font-bold">RentalFlow AI</h1>
-            </div>
-            <nav class="p-2">
-                <a href="dashboard.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+        <div class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-30" id="sidebar">
+            <a href="/dashboard.html" class="flex items-center space-x-3">
+                <img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full">
+                <span class="text-2xl font-bold">RentalFlow</span>
+            </a>
+            <nav class="space-y-2">
+                <a href="/dashboard.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
                 </a>
-                <a href="fleet.html" class="block py-2 px-4 rounded bg-gray-700">
-                    <i class="fas fa-car mr-2"></i> Fleet
+                <a href="/bookings.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span>
                 </a>
-                <a href="bookings.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-calendar-check mr-2"></i> Bookings
+                <a href="/customers.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-users w-6"></i><span class="ml-3">Customers</span>
                 </a>
-                <a href="customers.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-user-friends mr-2"></i> Customers
+                <a href="/fleet.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white">
+                    <i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span>
                 </a>
-                <a href="accounting.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-calculator mr-2"></i> Accounting
+                <a href="/accounting.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-file-invoice-dollar w-6"></i><span class="ml-3">Accounting</span>
                 </a>
-                <a href="invoices.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-file-invoice-dollar mr-2"></i> Invoices
-                </a>
-                <a href="settings.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-cog mr-2"></i> Settings
+                 <a href="/invoices.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span>
                 </a>
             </nav>
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 overflow-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold">Fleet Management</h1>
-                    <button @click="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Add Vehicle
-                    </button>
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="flex justify-between items-center p-6 bg-white border-b">
+                <div class="flex items-center">
+                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Manage Vehicle Fleet</h1>
                 </div>
+                <button id="add-vehicle-button" class="flex items-center bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-2"></i> Add Vehicle
+                </button>
+            </header>
 
-                <!-- Fleet Table -->
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Rate</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="vehicle in fleet" :key="vehicle.id">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16"></div>
-                                            <div class="ml-4">
-                                                <div class="font-medium text-gray-900" x-text="vehicle.model"></div>
-                                                <div class="text-gray-500" x-text="vehicle.color"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="vehicle.category"></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="vehicle.year"></td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="status-badge" 
-                                              :class="{
-                                                'status-available': vehicle.status === 'Available',
-                                                'status-on-rent': vehicle.status === 'On Rent',
-                                                'status-maintenance': vehicle.status === 'Maintenance'
-                                              }"
-                                              x-text="vehicle.status"></span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        AED <span x-text="vehicle.pricing?.daily?.min_rate || 'N/A'"></span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a :href="`vehicle-detail.html?id=${vehicle.id}`" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
-                                        <a href="#" @click.prevent="editVehicle(vehicle)" class="text-yellow-600 hover:text-yellow-900 mr-3">Edit</a>
-                                        <a href="#" @click.prevent="deleteVehicle(vehicle.id)" class="text-red-600 hover:text-red-900">Delete</a>
-                                    </td>
+            <!-- Content Body -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Vehicle List</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="p-4 font-medium text-gray-600">Vehicle (Make/Model)</th>
+                                    <th class="p-4 font-medium text-gray-600">Plate No.</th>
+                                    <th class="p-4 font-medium text-gray-600">Status</th>
+                                    <th class="p-4 font-medium text-gray-600">Current KM</th>
+                                    <th class="p-4 font-medium text-gray-600">Actions</th>
                                 </tr>
-                            </template>
-                            <template x-if="fleet.length === 0">
-                                <tr>
-                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                        No vehicles found. Add your first vehicle to get started.
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody id="vehicles-table-body">
+                                <!-- JS will populate this -->
+                                <tr><td colspan="5" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading vehicles...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
-    <!-- Add Vehicle Modal -->
-    <div x-show="isAddModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg w-full max-w-2xl p-6">
-            <h2 class="text-2xl font-bold mb-4" x-text="isEditing ? 'Edit Vehicle' : 'Add New Vehicle'"></h2>
-            
-            <form @submit.prevent="saveVehicle">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <!-- Add/Edit Vehicle Modal -->
+    <div id="vehicle-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-container bg-white w-full max-w-lg mx-auto rounded-lg shadow-lg z-50 transform scale-95">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 id="modal-title" class="text-xl font-semibold">Add New Vehicle</h3>
+                <button id="close-modal-button" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <form id="vehicle-form" class="p-6 space-y-4">
+                <input type="hidden" id="vehicle-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
-                        <input type="text" x-model="formData.model" class="w-full border border-gray-300 rounded p-2" required>
+                        <label for="make" class="block text-sm font-medium text-gray-700">Make</label>
+                        <input type="text" id="make" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <input type="text" x-model="formData.category" class="w-full border border-gray-300 rounded p-2" required>
+                        <label for="model" class="block text-sm font-medium text-gray-700">Model</label>
+                        <input type="text" id="model" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                        <input type="number" x-model="formData.year" min="2000" max="2025" class="w-full border border-gray-300 rounded p-2" required>
+                        <label for="year" class="block text-sm font-medium text-gray-700">Year</label>
+                        <input type="number" id="year" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
-                        <input type="text" x-model="formData.color" class="w-full border border-gray-300 rounded p-2" required>
+                        <label for="plateNumber" class="block text-sm font-medium text-gray-700">Plate Number</label>
+                        <input type="text" id="plateNumber" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
-                        <input type="text" x-model="formData.plateNumber" class="w-full border border-gray-300 rounded p-2" required>
+                        <label for="color" class="block text-sm font-medium text-gray-700">Color</label>
+                        <input type="text" id="color" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select x-model="formData.status" class="w-full border border-gray-300 rounded p-2" required>
-                            <option value="Available">Available</option>
-                            <option value="On Rent">On Rent</option>
-                            <option value="Maintenance">Maintenance</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Specifications</label>
-                    <textarea x-model="formData.specs" class="w-full border border-gray-300 rounded p-2"></textarea>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Daily Rate (Min)</label>
-                        <input type="number" x-model="formData.pricing.daily.min_rate" min="0" class="w-full border border-gray-300 rounded p-2" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Daily Rate (Max)</label>
-                        <input type="number" x-model="formData.pricing.daily.max_rate" min="0" class="w-full border border-gray-300 rounded p-2" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Security Deposit</label>
-                        <input type="number" x-model="formData.security_deposit.refundable" min="0" class="w-full border border-gray-300 rounded p-2" required>
+                     <div>
+                        <label for="currentKM" class="block text-sm font-medium text-gray-700">Current Kilometers</label>
+                        <input type="number" id="currentKM" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
-                
-                <div class="flex justify-end space-x-3">
-                    <button type="button" @click="isAddModalOpen = false" class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        Save Vehicle
-                    </button>
+                 <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                    <select id="status" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="available">Available</option>
+                        <option value="rented">Rented</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="unavailable">Unavailable</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="maintenanceNotes" class="block text-sm font-medium text-gray-700">Maintenance Notes (Wheels, Oil, etc.)</label>
+                    <textarea id="maintenanceNotes" rows="4" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="button" id="cancel-button" class="bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700">Save Vehicle</button>
                 </div>
             </form>
         </div>
     </div>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
 
     <script>
-        function fleetController() {
-            return {
-                fleet: [],
-                isAddModalOpen: false,
-                isEditing: false,
-                formData: {
-                    model: '',
-                    category: '',
-                    year: new Date().getFullYear(),
-                    color: '',
-                    plateNumber: '',
-                    status: 'Available',
-                    specs: '',
-                    pricing: {
-                        daily: { min_rate: 0, max_rate: 0 },
-                        weekly: { min_rate: 0, max_rate: 0 },
-                        monthly: { min_rate: 0, max_rate: 0 }
-                    },
-                    security_deposit: {
-                        refundable: 0,
-                        non_refundable_option: 0
-                    }
-                },
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof db === 'undefined') {
+                console.error("Firestore is not initialized.");
+                document.getElementById('vehicles-table-body').innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-500">Error: Database connection failed.</td></tr>`;
+                return;
+            }
+
+            // --- UI Elements ---
+            const menuButton = document.getElementById('menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const addVehicleButton = document.getElementById('add-vehicle-button');
+            const vehicleModal = document.getElementById('vehicle-modal');
+            const closeModalButton = document.getElementById('close-modal-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const vehicleForm = document.getElementById('vehicle-form');
+            const modalTitle = document.getElementById('modal-title');
+            const vehiclesTableBody = document.getElementById('vehicles-table-body');
+
+            // --- Modal Control ---
+            const openModal = (mode, vehicle = {}) => {
+                vehicleForm.reset();
+                if (mode === 'edit') {
+                    modalTitle.textContent = 'Edit Vehicle';
+                    document.getElementById('vehicle-id').value = vehicle.id;
+                    document.getElementById('make').value = vehicle.make || '';
+                    document.getElementById('model').value = vehicle.model || '';
+                    document.getElementById('year').value = vehicle.year || '';
+                    document.getElementById('plateNumber').value = vehicle.plateNumber || '';
+                    document.getElementById('color').value = vehicle.color || '';
+                    document.getElementById('currentKM').value = vehicle.currentKM || '';
+                    document.getElementById('status').value = vehicle.status || 'available';
+                    document.getElementById('maintenanceNotes').value = vehicle.maintenanceNotes || '';
+                } else {
+                    modalTitle.textContent = 'Add New Vehicle';
+                    document.getElementById('vehicle-id').value = '';
+                }
+                vehicleModal.classList.remove('hidden');
+                setTimeout(() => vehicleModal.querySelector('.modal-container').classList.remove('scale-95'), 10);
+            };
+
+            const closeModal = () => {
+                vehicleModal.querySelector('.modal-container').classList.add('scale-95');
+                setTimeout(() => vehicleModal.classList.add('hidden'), 300);
+            };
+
+            addVehicleButton.addEventListener('click', () => openModal('add'));
+            closeModalButton.addEventListener('click', closeModal);
+            cancelButton.addEventListener('click', closeModal);
+            menuButton.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+            
+            // --- Firestore CRUD ---
+            const vehiclesRef = db.collection('vehicles');
+
+            // C: Create / U: Update
+            vehicleForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('vehicle-id').value;
+                const vehicleData = {
+                    make: document.getElementById('make').value,
+                    model: document.getElementById('model').value,
+                    year: document.getElementById('year').value,
+                    plateNumber: document.getElementById('plateNumber').value,
+                    color: document.getElementById('color').value,
+                    currentKM: Number(document.getElementById('currentKM').value),
+                    status: document.getElementById('status').value,
+                    maintenanceNotes: document.getElementById('maintenanceNotes').value,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (id) {
+                    vehiclesRef.doc(id).update(vehicleData)
+                        .then(() => {
+                            console.log("Vehicle updated successfully");
+                            closeModal();
+                        })
+                        .catch(error => console.error("Error updating vehicle: ", error));
+                } else {
+                    vehicleData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    vehiclesRef.add(vehicleData)
+                        .then(() => {
+                            console.log("Vehicle added successfully");
+                            closeModal();
+                        })
+                        .catch(error => console.error("Error adding vehicle: ", error));
+                }
+            });
+
+            // R: Read Vehicles (Real-time)
+            vehiclesRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                if (snapshot.empty) {
+                    vehiclesTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-500">No vehicles found. Click 'Add Vehicle' to start.</td></tr>`;
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const vehicle = { id: doc.id, ...doc.data() };
+                    const statusColor = getStatusColor(vehicle.status);
+                    html += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-4 font-medium text-gray-800">${vehicle.make} ${vehicle.model}</td>
+                            <td class="p-4 text-gray-600">${vehicle.plateNumber}</td>
+                            <td class="p-4">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor.bg} ${statusColor.text}">
+                                    ${vehicle.status.charAt(0).toUpperCase() + vehicle.status.slice(1)}
+                                </span>
+                            </td>
+                            <td class="p-4 text-gray-600">${vehicle.currentKM ? vehicle.currentKM.toLocaleString() : 'N/A'}</td>
+                            <td class="p-4 space-x-2">
+                                <button class="edit-btn text-blue-500 hover:text-blue-700" data-id="${vehicle.id}"><i class="fas fa-edit"></i></button>
+                                <button class="delete-btn text-red-500 hover:text-red-700" data-id="${vehicle.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                vehiclesTableBody.innerHTML = html;
+            }, error => {
+                console.error("Error fetching vehicles: ", error);
+                vehiclesTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-500">Error loading data.</td></tr>`;
+            });
+
+            // D: Delete Vehicle
+            vehiclesTableBody.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const id = target.dataset.id;
                 
-                async loadFleet() {
-                    try {
-                        const response = await fetch('/api/fleet');
-                        this.fleet = await response.json();
-                    } catch (error) {
-                        console.error('Error loading fleet:', error);
-                    }
-                },
-                
-                openAddModal() {
-                    this.isEditing = false;
-                    this.formData = {
-                        model: '',
-                        category: '',
-                        year: new Date().getFullYear(),
-                        color: '',
-                        plateNumber: '',
-                        status: 'Available',
-                        specs: '',
-                        pricing: {
-                            daily: { min_rate: 0, max_rate: 0 },
-                            weekly: { min_rate: 0, max_rate: 0 },
-                            monthly: { min_rate: 0, max_rate: 0 }
-                        },
-                        security_deposit: {
-                            refundable: 0,
-                            non_refundable_option: 0
-                        }
-                    };
-                    this.isAddModalOpen = true;
-                },
-                
-                editVehicle(vehicle) {
-                    this.isEditing = true;
-                    this.formData = { ...vehicle };
-                    this.isAddModalOpen = true;
-                },
-                
-                async saveVehicle() {
-                    const url = this.isEditing 
-                        ? `/api/fleet/${this.formData.id}` 
-                        : '/api/fleet';
-                        
-                    const method = this.isEditing ? 'PUT' : 'POST';
-                    
-                    try {
-                        const response = await fetch(url, {
-                            method,
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.formData)
-                        });
-                        
-                        if (response.ok) {
-                            this.isAddModalOpen = false;
-                            this.loadFleet();
-                        }
-                    } catch (error) {
-                        console.error('Error saving vehicle:', error);
-                        alert('Failed to save vehicle: ' + error.message);
-                    }
-                },
-                
-                async deleteVehicle(id) {
-                    if (!confirm('Are you sure you want to delete this vehicle?')) return;
-                    
-                    try {
-                        await fetch(`/api/fleet/${id}`, { method: 'DELETE' });
-                        this.loadFleet();
-                    } catch (error) {
-                        console.error('Error deleting vehicle:', error);
-                        alert('Failed to delete vehicle: ' + error.message);
+                if (target.classList.contains('delete-btn')) {
+                    if (confirm('Are you sure you want to delete this vehicle?')) {
+                        vehiclesRef.doc(id).delete()
+                            .catch(error => console.error('Error deleting vehicle: ', error));
                     }
                 }
-            };
-        }
+
+                if (target.classList.contains('edit-btn')) {
+                    vehiclesRef.doc(id).get().then(doc => {
+                        if (doc.exists) {
+                            openModal('edit', { id: doc.id, ...doc.data() });
+                        }
+                    }).catch(error => console.log("Error getting document:", error));
+                }
+            });
+
+            function getStatusColor(status) {
+                switch (status) {
+                    case 'available': return { bg: 'bg-green-100', text: 'text-green-800' };
+                    case 'rented': return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
+                    case 'maintenance': return { bg: 'bg-red-100', text: 'text-red-800' };
+                    default: return { bg: 'bg-gray-100', text: 'text-gray-800' };
+                }
+            }
+        });
     </script>
 </body>
 </html>

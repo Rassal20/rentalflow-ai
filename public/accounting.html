@@ -1,261 +1,307 @@
 <!DOCTYPE html>
-<html lang="en" x-data="accountingController()" x-init="loadEntries()">
+<html lang="en">
 <head>
-    <!-- Same head as dashboard.html -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounting - RentalFlow AI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-container { transition: transform 0.3s ease; }
+    </style>
 </head>
-<body class="bg-gray-900 text-white">
-    <div class="container mx-auto p-6">
-        <h1 class="text-3xl font-bold mb-6">Accounting System</h1>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="stat-card bg-blue-900">
-                <h3 class="text-gray-300">Total Income</h3>
-                <p class="text-3xl font-bold" x-text="'AED ' + totals.income.toFixed(2)"></p>
-            </div>
-            <div class="stat-card bg-green-900">
-                <h3 class="text-gray-300">Total Expenses</h3>
-                <p class="text-3xl font-bold" x-text="'AED ' + totals.expenses.toFixed(2)"></p>
-            </div>
-            <div class="stat-card bg-purple-900">
-                <h3 class="text-gray-300">Net Profit</h3>
-                <p class="text-3xl font-bold" 
-                   :class="totals.net >= 0 ? 'text-green-400' : 'text-red-400'"
-                   x-text="'AED ' + totals.net.toFixed(2)"></p>
-            </div>
-            <div class="stat-card bg-yellow-900">
-                <h3 class="text-gray-300">Pending Invoices</h3>
-                <p class="text-3xl font-bold" x-text="'AED ' + totals.pending.toFixed(2)"></p>
-            </div>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-200">
+        <!-- Sidebar -->
+        <div class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-30" id="sidebar">
+            <a href="/dashboard.html" class="flex items-center space-x-3">
+                <img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full">
+                <span class="text-2xl font-bold">RentalFlow</span>
+            </a>
+            <nav class="space-y-2">
+                <a href="/dashboard.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
+                </a>
+                <a href="/bookings.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span>
+                </a>
+                <a href="/customers.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-users w-6"></i><span class="ml-3">Customers</span>
+                </a>
+                <a href="/fleet.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span>
+                </a>
+                <a href="/accounting.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white">
+                    <i class="fas fa-file-invoice-dollar w-6"></i><span class="ml-3">Accounting</span>
+                </a>
+                 <a href="/invoices.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span>
+                </a>
+            </nav>
         </div>
-        
-        <div class="flex justify-between items-center mb-4">
-            <div>
-                <button @click="openAddModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded mr-4">
-                    + Add Entry
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="flex justify-between items-center p-6 bg-white border-b">
+                <div class="flex items-center">
+                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Accounting</h1>
+                </div>
+                <button id="add-transaction-button" class="flex items-center bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-2"></i> Add Transaction
                 </button>
-                <button @click="exportToCSV()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
-                    Export to CSV
-                </button>
-            </div>
-            
-            <div class="flex space-x-2">
-                <select x-model="filterType" class="bg-gray-700 rounded p-2">
-                    <option value="">All Types</option>
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                </select>
-                <input type="month" x-model="filterMonth" class="bg-gray-700 rounded p-2">
-            </div>
-        </div>
-        
-        <div class="bg-gray-800 rounded-lg overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-700">
-                    <tr>
-                        <th class="py-3 px-4 text-left">Date</th>
-                        <th class="py-3 px-4 text-left">Type</th>
-                        <th class="py-3 px-4 text-left">Category</th>
-                        <th class="py-3 px-4 text-left">Description</th>
-                        <th class="py-3 px-4 text-left">Amount</th>
-                        <th class="py-3 px-4 text-left">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template x-for="entry in filteredEntries" :key="entry.id">
-                        <tr class="border-b border-gray-700 hover:bg-gray-750">
-                            <td class="py-3 px-4" x-text="new Date(entry.date.seconds * 1000).toLocaleDateString()"></td>
-                            <td class="py-3 px-4">
-                                <span :class="entry.type === 'income' ? 'text-green-400' : 'text-red-400'"
-                                      x-text="entry.type.charAt(0).toUpperCase() + entry.type.slice(1)"></span>
-                            </td>
-                            <td class="py-3 px-4" x-text="entry.category"></td>
-                            <td class="py-3 px-4" x-text="entry.description"></td>
-                            <td class="py-3 px-4" 
-                                :class="entry.type === 'income' ? 'text-green-400' : 'text-red-400'"
-                                x-text="'AED ' + entry.amount.toFixed(2)"></td>
-                            <td class="py-3 px-4">
-                                <button @click="editEntry(entry)" class="text-blue-400 mr-2">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button @click="deleteEntry(entry.id)" class="text-red-500">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
+            </header>
+
+            <!-- Content Body -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                 <!-- Stat Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+                        <p id="total-revenue" class="text-3xl font-bold text-green-600">$0.00</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <p class="text-sm font-medium text-gray-500">Total Expenses</p>
+                        <p id="total-expenses" class="text-3xl font-bold text-red-600">$0.00</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <p class="text-sm font-medium text-gray-500">Net Profit</p>
+                        <p id="net-profit" class="text-3xl font-bold text-gray-800">$0.00</p>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Recent Transactions</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="p-4 font-medium text-gray-600">Date</th>
+                                    <th class="p-4 font-medium text-gray-600">Description</th>
+                                    <th class="p-4 font-medium text-gray-600">Category</th>
+                                    <th class="p-4 font-medium text-gray-600">Type</th>
+                                    <th class="p-4 font-medium text-gray-600 text-right">Amount</th>
+                                    <th class="p-4 font-medium text-gray-600 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body">
+                                <tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading transactions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
-    
-    <!-- Accounting Entry Modal -->
-    <div x-show="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg w-full max-w-md p-6">
-            <h2 class="text-2xl font-bold mb-4" x-text="isEditing ? 'Edit Entry' : 'Add Entry'"></h2>
-            
-            <form @submit.prevent="saveEntry">
-                <div class="grid grid-cols-2 gap-4 mb-4">
+
+    <!-- Add/Edit Transaction Modal -->
+    <div id="transaction-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-container bg-white w-full max-w-md mx-auto rounded-lg shadow-lg z-50 transform scale-95">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 id="modal-title" class="text-xl font-semibold">Add New Transaction</h3>
+                <button id="close-modal-button" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <form id="transaction-form" class="p-6 space-y-4">
+                <input type="hidden" id="transaction-id">
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                    <input type="text" id="description" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block mb-2">Type</label>
-                        <select x-model="formData.type" class="w-full bg-gray-700 rounded p-2" required>
+                        <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
+                        <select id="type" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                             <option value="income">Income</option>
                             <option value="expense">Expense</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block mb-2">Date</label>
-                        <input type="date" x-model="formData.date" class="w-full bg-gray-700 rounded p-2" required>
+                        <label for="amount" class="block text-sm font-medium text-gray-700">Amount ($)</label>
+                        <input type="number" step="0.01" id="amount" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                 </div>
-                
-                <div class="mb-4">
-                    <label class="block mb-2">Category</label>
-                    <input type="text" x-model="formData.category" 
-                           class="w-full bg-gray-700 rounded p-2" required
-                           placeholder="Rental Income, Maintenance, etc.">
+                 <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                    <input type="text" id="category" placeholder="e.g., Fuel, Maintenance, Rental Fee" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                 </div>
-                
-                <div class="mb-4">
-                    <label class="block mb-2">Description</label>
-                    <textarea x-model="formData.description" class="w-full bg-gray-700 rounded p-2" required></textarea>
+                <div>
+                    <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
+                    <input type="date" id="date" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                 </div>
-                
-                <div class="mb-4">
-                    <label class="block mb-2">Amount (AED)</label>
-                    <input type="number" x-model="formData.amount" min="0" step="0.01"
-                           class="w-full bg-gray-700 rounded p-2" required>
-                </div>
-                
-                <div class="flex justify-end space-x-3">
-                    <button type="button" @click="isModalOpen = false" 
-                            class="bg-gray-600 px-4 py-2 rounded">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-indigo-600 px-4 py-2 rounded">
-                        Save
-                    </button>
+                <div class="flex justify-end pt-4">
+                    <button type="button" id="cancel-button" class="bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700">Save Transaction</button>
                 </div>
             </form>
         </div>
     </div>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
 
     <script>
-        function accountingController() {
-            return {
-                entries: [],
-                filterType: '',
-                filterMonth: '',
-                isModalOpen: false,
-                isEditing: false,
-                formData: {
-                    id: '',
-                    type: 'income',
-                    date: new Date().toISOString().split('T')[0],
-                    category: '',
-                    description: '',
-                    amount: 0
-                },
-                totals: {
-                    income: 0,
-                    expenses: 0,
-                    net: 0,
-                    pending: 0
-                },
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof db === 'undefined') {
+                console.error("Firestore is not initialized.");
+                return;
+            }
+
+            // --- UI Elements ---
+            const menuButton = document.getElementById('menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const addTransactionButton = document.getElementById('add-transaction-button');
+            const transactionModal = document.getElementById('transaction-modal');
+            const closeModalButton = document.getElementById('close-modal-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const transactionForm = document.getElementById('transaction-form');
+            const modalTitle = document.getElementById('modal-title');
+            const transactionsTableBody = document.getElementById('transactions-table-body');
+            
+            // --- Modal Control ---
+            const openModal = (mode, transaction = {}) => {
+                transactionForm.reset();
+                document.getElementById('date').valueAsDate = new Date(); // Default to today
+                if (mode === 'edit') {
+                    modalTitle.textContent = 'Edit Transaction';
+                    document.getElementById('transaction-id').value = transaction.id;
+                    document.getElementById('description').value = transaction.description;
+                    document.getElementById('type').value = transaction.type;
+                    document.getElementById('amount').value = transaction.amount;
+                    document.getElementById('category').value = transaction.category;
+                    document.getElementById('date').value = new Date(transaction.date.seconds * 1000).toISOString().split('T')[0];
+                } else {
+                    modalTitle.textContent = 'Add New Transaction';
+                    document.getElementById('transaction-id').value = '';
+                }
+                transactionModal.classList.remove('hidden');
+                setTimeout(() => transactionModal.querySelector('.modal-container').classList.remove('scale-95'), 10);
+            };
+
+            const closeModal = () => {
+                transactionModal.querySelector('.modal-container').classList.add('scale-95');
+                setTimeout(() => transactionModal.classList.add('hidden'), 300);
+            };
+
+            addTransactionButton.addEventListener('click', () => openModal('add'));
+            closeModalButton.addEventListener('click', closeModal);
+            cancelButton.addEventListener('click', closeModal);
+            menuButton.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+
+            // --- Firestore CRUD ---
+            const transactionsRef = db.collection('transactions');
+
+            // C: Create / U: Update Transaction
+            transactionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('transaction-id').value;
+                const transactionData = {
+                    description: document.getElementById('description').value,
+                    type: document.getElementById('type').value,
+                    amount: Number(document.getElementById('amount').value),
+                    category: document.getElementById('category').value,
+                    date: new Date(document.getElementById('date').value),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (id) {
+                    transactionsRef.doc(id).update(transactionData).then(closeModal);
+                } else {
+                    transactionData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    transactionsRef.add(transactionData).then(closeModal);
+                }
+            });
+
+            // R: Read Transactions (Real-time)
+            transactionsRef.orderBy('date', 'desc').onSnapshot(snapshot => {
+                let totalRevenue = 0;
+                let totalExpenses = 0;
                 
-                async loadEntries() {
-                    try {
-                        const response = await fetch('/api/accounting');
-                        this.entries = await response.json();
-                        this.calculateTotals();
-                    } catch (error) {
-                        console.error('Error loading entries:', error);
-                    }
-                },
-                
-                calculateTotals() {
-                    this.totals = {
-                        income: this.entries
-                            .filter(e => e.type === 'income')
-                            .reduce((sum, e) => sum + e.amount, 0),
-                        expenses: this.entries
-                            .filter(e => e.type === 'expense')
-                            .reduce((sum, e) => sum + e.amount, 0),
-                        net: 0,
-                        pending: 0 // Would need to fetch from invoices
-                    };
-                    this.totals.net = this.totals.income - this.totals.expenses;
-                },
-                
-                get filteredEntries() {
-                    let result = [...this.entries];
-                    
-                    if (this.filterType) {
-                        result = result.filter(e => e.type === this.filterType);
-                    }
-                    
-                    if (this.filterMonth) {
-                        const [year, month] = this.filterMonth.split('-');
-                        result = result.filter(e => {
-                            const entryDate = new Date(e.date.seconds * 1000);
-                            return entryDate.getFullYear() == year && 
-                                   (entryDate.getMonth() + 1) == month;
-                        });
-                    }
-                    
-                    return result.sort((a, b) => 
-                        new Date(b.date.seconds * 1000) - new Date(a.date.seconds * 1000)
-                    );
-                },
-                
-                openAddModal() {
-                    this.isEditing = false;
-                    this.formData = {
-                        id: '',
-                        type: 'income',
-                        date: new Date().toISOString().split('T')[0],
-                        category: '',
-                        description: '',
-                        amount: 0
-                    };
-                    this.isModalOpen = true;
-                },
-                
-                editEntry(entry) {
-                    this.isEditing = true;
-                    this.formData = {
-                        ...entry,
-                        date: new Date(entry.date.seconds * 1000).toISOString().split('T')[0]
-                    };
-                    this.isModalOpen = true;
-                },
-                
-                async saveEntry() {
-                    const url = this.isEditing 
-                        ? `/api/accounting/${this.formData.id}` 
-                        : '/api/accounting';
+                if (snapshot.empty) {
+                    transactionsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No transactions found.</td></tr>`;
+                } else {
+                     let html = '';
+                    snapshot.forEach(doc => {
+                        const t = { id: doc.id, ...doc.data() };
+                        const isIncome = t.type === 'income';
                         
-                    const method = this.isEditing ? 'PUT' : 'POST';
-                    
-                    try {
-                        const response = await fetch(url, {
-                            method,
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.formData)
-                        });
-                        
-                        if (response.ok) {
-                            this.isModalOpen = false;
-                            this.loadEntries();
+                        if(isIncome) totalRevenue += t.amount;
+                        else totalExpenses += t.amount;
+
+                        html += `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-4 text-gray-600">${new Date(t.date.seconds * 1000).toLocaleDateString()}</td>
+                                <td class="p-4 font-medium text-gray-800">${t.description}</td>
+                                <td class="p-4 text-gray-600">${t.category}</td>
+                                <td class="p-4">
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full ${isIncome ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        ${isIncome ? 'Income' : 'Expense'}
+                                    </span>
+                                </td>
+                                <td class="p-4 text-right font-medium ${isIncome ? 'text-green-600' : 'text-red-600'}">
+                                    ${isIncome ? '+' : '-'}$${t.amount.toFixed(2)}
+                                </td>
+                                <td class="p-4 text-center space-x-2">
+                                    <button class="edit-btn text-blue-500 hover:text-blue-700" data-id="${t.id}"><i class="fas fa-edit"></i></button>
+                                    <button class="delete-btn text-red-500 hover:text-red-700" data-id="${t.id}"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    transactionsTableBody.innerHTML = html;
+                }
+
+                // Update stat cards
+                const netProfit = totalRevenue - totalExpenses;
+                document.getElementById('total-revenue').textContent = `$${totalRevenue.toFixed(2)}`;
+                document.getElementById('total-expenses').textContent = `$${totalExpenses.toFixed(2)}`;
+                document.getElementById('net-profit').textContent = `$${netProfit.toFixed(2)}`;
+                if(netProfit < 0) {
+                     document.getElementById('net-profit').classList.remove('text-gray-800', 'text-green-600');
+                     document.getElementById('net-profit').classList.add('text-red-600');
+                } else {
+                     document.getElementById('net-profit').classList.remove('text-red-600', 'text-gray-800');
+                     document.getElementById('net-profit').classList.add('text-green-600');
+                }
+
+            }, error => {
+                console.error("Error fetching transactions: ", error);
+                transactionsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-500">Error loading data.</td></tr>`;
+            });
+
+            // D: Delete Transaction
+            transactionsTableBody.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                const id = target.dataset.id;
+                
+                if (target.classList.contains('delete-btn')) {
+                    if (confirm('Are you sure you want to delete this transaction?')) {
+                        transactionsRef.doc(id).delete();
+                    }
+                }
+
+                if (target.classList.contains('edit-btn')) {
+                    transactionsRef.doc(id).get().then(doc => {
+                        if (doc.exists) {
+                            openModal('edit', { id: doc.id, ...doc.data() });
                         }
-                    } catch (error) {
-                        console.error('Error saving entry:', error);
-                    }
-                },
-                
-                async deleteEntry(id) {
-                    if (!confirm('Are you sure you want to delete this entry?')) return;
-                    
-                    try {
-                        await fetch(`/api/accounting/${id}`, { method: 'DELETE' });
-                        this.loadEntries();
-                    } 
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

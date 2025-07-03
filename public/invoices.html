@@ -1,224 +1,226 @@
 <!DOCTYPE html>
-<html lang="en" x-data="invoiceController()" x-init="loadInvoices(); loadCustomers()">
+<html lang="en">
 <head>
-    <!-- Same head as dashboard.html -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoices - RentalFlow AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; }
+    </style>
 </head>
-<body class="bg-gray-900 text-white">
-    <div class="container mx-auto p-6">
-        <h1 class="text-3xl font-bold mb-6">Invoice Management</h1>
-        
-        <div class="mb-6 flex justify-between">
-            <button @click="openCreateModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded">
-                + Create Invoice
-            </button>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-200">
+        <!-- Sidebar -->
+        <div class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-30" id="sidebar">
+            <a href="/dashboard.html" class="flex items-center space-x-3">
+                <img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full">
+                <span class="text-2xl font-bold">RentalFlow</span>
+            </a>
+            <nav class="space-y-2">
+                <a href="/dashboard.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+                <a href="/bookings.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
+                <a href="/customers.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
+                <a href="/fleet.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                <a href="/accounting.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-invoice-dollar w-6"></i><span class="ml-3">Accounting</span></a>
+                <a href="/invoices.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
+            </nav>
         </div>
 
-        <div class="bg-gray-800 rounded-lg overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-700">
-                    <tr>
-                        <th class="py-3 px-4 text-left">Invoice #</th>
-                        <th class="py-3 px-4 text-left">Customer</th>
-                        <th class="py-3 px-4 text-left">Date</th>
-                        <th class="py-3 px-4 text-left">Amount</th>
-                        <th class="py-3 px-4 text-left">Status</th>
-                        <th class="py-3 px-4 text-left">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template x-for="invoice in invoices" :key="invoice.id">
-                        <tr class="border-b border-gray-700 hover:bg-gray-750">
-                            <td class="py-3 px-4" x-text="invoice.id.substring(0, 8)"></td>
-                            <td class="py-3 px-4" x-text="getCustomerName(invoice.customerId)"></td>
-                            <td class="py-3 px-4" x-text="new Date(invoice.date.seconds * 1000).toLocaleDateString()"></td>
-                            <td class="py-3 px-4" x-text="'AED ' + invoice.totalAmount.toFixed(2)"></td>
-                            <td class="py-3 px-4">
-                                <span :class="invoice.paid ? 'bg-green-500' : 'bg-yellow-500'" 
-                                      class="px-2 py-1 rounded text-xs">
-                                    <span x-text="invoice.paid ? 'Paid' : 'Pending'"></span>
-                                </span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <button @click="downloadInvoice(invoice.id)" class="text-blue-400 mr-2">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                                <button @click="markAsPaid(invoice.id)" class="text-green-500 mr-2">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="flex justify-between items-center p-6 bg-white border-b">
+                <div class="flex items-center">
+                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Invoices</h1>
+                </div>
+                <button id="create-invoice-button" class="flex items-center bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition"><i class="fas fa-plus mr-2"></i> Create Invoice</button>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="p-4">Invoice #</th><th class="p-4">Customer</th><th class="p-4">Date</th>
+                                    <th class="p-4 text-right">Amount</th><th class="p-4 text-center">Status</th><th class="p-4 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoices-table-body">
+                                <tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading invoices...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
-    <!-- Invoice Creation Modal -->
-    <div x-show="isCreateModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-gray-800 rounded-lg w-full max-w-3xl p-6">
-            <h2 class="text-2xl font-bold mb-4">Create New Invoice</h2>
-            
-            <form @submit.prevent="createInvoice">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block mb-2">Customer</label>
-                        <select x-model="newInvoice.customerId" class="w-full bg-gray-700 rounded p-2" required>
-                            <option value="">Select Customer</option>
-                            <template x-for="customer in customers" :key="customer.id">
-                                <option :value="customer.id" x-text="customer.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block mb-2">Booking (Optional)</label>
-                        <input type="text" x-model="newInvoice.bookingId" class="w-full bg-gray-700 rounded p-2">
-                    </div>
+    <!-- Create Invoice Modal -->
+    <div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-lg mx-auto rounded-lg shadow-lg">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-xl font-semibold">Create New Invoice</h3>
+                <button id="close-modal-button" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div class="p-6">
+                <label for="booking-select" class="block text-sm font-medium text-gray-700">Select a Booking to Invoice</label>
+                <select id="booking-select" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md"></select>
+                <div class="flex justify-end pt-6">
+                    <button type="button" id="cancel-button" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg mr-2">Cancel</button>
+                    <button id="generate-invoice-button" class="bg-blue-600 text-white px-4 py-2 rounded-lg" disabled>Generate Invoice</button>
                 </div>
-                
-                <div class="mb-6">
-                    <h3 class="text-xl font-semibold mb-3">Invoice Items</h3>
-                    
-                    <div class="space-y-3">
-                        <template x-for="(item, index) in newInvoice.items" :key="index">
-                            <div class="flex items-end space-x-3">
-                                <div class="flex-1">
-                                    <label class="block mb-1">Description</label>
-                                    <input type="text" x-model="item.description" 
-                                           class="w-full bg-gray-700 rounded p-2" required>
-                                </div>
-                                <div class="w-32">
-                                    <label class="block mb-1">Amount (AED)</label>
-                                    <input type="number" x-model="item.amount" min="0" step="0.01"
-                                           class="w-full bg-gray-700 rounded p-2" required>
-                                </div>
-                                <button type="button" @click="removeItem(index)" 
-                                        class="bg-red-600 px-3 py-2 rounded mb-1">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </template>
-                        
-                        <button type="button" @click="addItem" class="text-indigo-400 flex items-center">
-                            <i class="fas fa-plus-circle mr-2"></i> Add Item
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="flex justify-between items-center mt-6">
-                    <div class="text-xl">
-                        <span class="font-semibold">Total:</span>
-                        <span class="ml-2" x-text="'AED ' + calculateTotal().toFixed(2)"></span>
-                    </div>
-                    
-                    <div class="flex space-x-3">
-                        <button type="button" @click="isCreateModalOpen = false" 
-                                class="bg-gray-600 px-4 py-2 rounded">
-                            Cancel
-                        </button>
-                        <button type="submit" class="bg-indigo-600 px-4 py-2 rounded">
-                            Create Invoice
-                        </button>
-                    </div>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
 
     <script>
-        function invoiceController() {
-            return {
-                invoices: [],
-                customers: [],
-                isCreateModalOpen: false,
-                newInvoice: {
-                    customerId: '',
-                    bookingId: '',
-                    items: [
-                        { description: 'Rental Fee', amount: 0 }
-                    ]
-                },
-                
-                async loadInvoices() {
-                    try {
-                        const response = await fetch('/api/invoices');
-                        this.invoices = await response.json();
-                    } catch (error) {
-                        console.error('Error loading invoices:', error);
-                    }
-                },
-                
-                async loadCustomers() {
-                    try {
-                        const response = await fetch('/api/customers');
-                        this.customers = await response.json();
-                    } catch (error) {
-                        console.error('Error loading customers:', error);
-                    }
-                },
-                
-                getCustomerName(customerId) {
-                    const customer = this.customers.find(c => c.id === customerId);
-                    return customer ? customer.name : 'Unknown';
-                },
-                
-                openCreateModal() {
-                    this.newInvoice = {
-                        customerId: '',
-                        bookingId: '',
-                        items: [{ description: 'Rental Fee', amount: 0 }]
-                    };
-                    this.isCreateModalOpen = true;
-                },
-                
-                addItem() {
-                    this.newInvoice.items.push({ description: '', amount: 0 });
-                },
-                
-                removeItem(index) {
-                    this.newInvoice.items.splice(index, 1);
-                },
-                
-                calculateTotal() {
-                    return this.newInvoice.items.reduce(
-                        (sum, item) => sum + parseFloat(item.amount || 0), 0
-                    );
-                },
-                
-                async createInvoice() {
-                    try {
-                        const response = await fetch('/api/invoices', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.newInvoice)
-                        });
-                        
-                        if (response.ok) {
-                            this.isCreateModalOpen = false;
-                            this.loadInvoices();
-                        }
-                    } catch (error) {
-                        console.error('Error creating invoice:', error);
-                    }
-                },
-                
-                downloadInvoice(invoiceId) {
-                    window.open(`/api/invoices/${invoiceId}/pdf`, '_blank');
-                },
-                
-                async markAsPaid(invoiceId) {
-                    try {
-                        await fetch(`/api/invoices/${invoiceId}/paid`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                        this.loadInvoices();
-                    } catch (error) {
-                        console.error('Error marking invoice as paid:', error);
-                    }
-                }
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof db === 'undefined') { return; }
+
+            const createInvoiceButton = document.getElementById('create-invoice-button');
+            const invoiceModal = document.getElementById('invoice-modal');
+            const closeModalButton = document.getElementById('close-modal-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const bookingSelect = document.getElementById('booking-select');
+            const generateInvoiceButton = document.getElementById('generate-invoice-button');
+            const invoicesTableBody = document.getElementById('invoices-table-body');
+            
+            const openModal = () => {
+                loadBookingsForInvoice();
+                invoiceModal.classList.remove('hidden');
             };
-        }
+            const closeModal = () => invoiceModal.classList.add('hidden');
+
+            createInvoiceButton.addEventListener('click', openModal);
+            closeModalButton.addEventListener('click', closeModal);
+            cancelButton.addEventListener('click', closeModal);
+            document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+            bookingSelect.addEventListener('change', () => generateInvoiceButton.disabled = !bookingSelect.value);
+
+            const invoicesRef = db.collection('invoices');
+            const bookingsRef = db.collection('bookings');
+
+            async function loadBookingsForInvoice() {
+                bookingSelect.innerHTML = '<option value="">Loading...</option>';
+                generateInvoiceButton.disabled = true;
+                
+                const query = bookingsRef.where('invoiced', '==', false).where('status', 'in', ['confirmed', 'completed']);
+                const snapshot = await query.get();
+
+                if (snapshot.empty) {
+                    bookingSelect.innerHTML = '<option value="">No bookings ready for invoicing</option>';
+                    return;
+                }
+                
+                let options = '<option value="">Select a booking</option>';
+                snapshot.forEach(doc => {
+                    const b = doc.data();
+                    options += `<option value="${doc.id}">${b.customerName} - ${b.vehicleName}</option>`;
+                });
+                bookingSelect.innerHTML = options;
+            }
+
+            generateInvoiceButton.addEventListener('click', async () => {
+                const bookingId = bookingSelect.value;
+                if (!bookingId) return;
+
+                try {
+                    const bookingDoc = await bookingsRef.doc(bookingId).get();
+                    if (!bookingDoc.exists || !bookingDoc.data().financials) throw new Error("Booking data or financials are missing.");
+                    
+                    const bookingData = bookingDoc.data();
+                    const financials = bookingData.financials;
+
+                    const customerDoc = await db.collection('customers').doc(bookingData.customerId).get();
+                    const customerData = customerDoc.exists ? customerDoc.data() : {};
+
+                    // --- Build the new itemized invoice data ---
+                    const invoiceItems = [];
+                    // Add the main rental item
+                    invoiceItems.push({
+                        description: `Rental of ${bookingData.vehicleName} (${financials.rentalRate.days} days @ $${financials.rentalRate.rate.toFixed(2)}/day)`,
+                        total: financials.rentalRate.total
+                    });
+                    // Add all additional charges
+                    financials.additionalCharges.forEach(charge => {
+                        invoiceItems.push({
+                            description: charge.description,
+                            total: charge.amount
+                        });
+                    });
+
+                    const invoiceData = {
+                        invoiceNumber: `INV-${Date.now()}`,
+                        bookingId: bookingId,
+                        issueDate: firebase.firestore.FieldValue.serverTimestamp(),
+                        dueDate: new Date(new Date().setDate(new Date().getDate() + 14)),
+                        status: 'unpaid',
+                        customer: {
+                            name: customerData.fullName || 'N/A',
+                            email: customerData.email || 'N/A',
+                            phone: customerData.phone || 'N/A',
+                            address: customerData.address || 'N/A',
+                        },
+                        items: invoiceItems,
+                        subtotal: financials.subtotal,
+                        taxAmount: financials.tax.amount,
+                        total: financials.total,
+                    };
+
+                    const newInvoice = await invoicesRef.add(invoiceData);
+                    await bookingsRef.doc(bookingId).update({ invoiced: true });
+                    
+                    await db.collection('transactions').add({
+                        description: `Invoice ${invoiceData.invoiceNumber} for ${invoiceData.customer.name}`,
+                        type: 'income',
+                        amount: invoiceData.total,
+                        category: 'Rental Income',
+                        date: new Date(),
+                        invoiceId: newInvoice.id,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    closeModal();
+                    alert('Invoice created successfully!');
+
+                } catch (error) {
+                    console.error("Error generating invoice: ", error);
+                    alert("Failed to generate invoice: " + error.message);
+                }
+            });
+
+            invoicesRef.orderBy('issueDate', 'desc').onSnapshot(snapshot => {
+                if (snapshot.empty) {
+                    invoicesTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No invoices found.</td></tr>`;
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const inv = { id: doc.id, ...doc.data() };
+                    html += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-4">${inv.invoiceNumber}</td>
+                            <td class="p-4">${inv.customer.name}</td>
+                            <td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td>
+                            <td class="p-4 text-right font-medium">$${inv.total.toFixed(2)}</td>
+                            <td class="p-4 text-center"><span class="px-2 py-1 text-xs rounded-full ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${inv.status}</span></td>
+                            <td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-blue-500 hover:text-blue-700"><i class="fas fa-eye"></i> View</a></td>
+                        </tr>
+                    `;
+                });
+                invoicesTableBody.innerHTML = html;
+            });
+        });
     </script>
 </body>
 </html>

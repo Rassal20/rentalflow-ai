@@ -1,314 +1,439 @@
 <!DOCTYPE html>
-<html lang="en" x-data="bookingsController()" x-init="loadBookings(); loadFleet(); loadCustomers()">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bookings | RentalFlow AI</title>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Bookings - RentalFlow AI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .status-badge {
-            @apply px-3 py-1 rounded-full text-xs font-semibold;
-        }
-        
-        .status-confirmed {
-            @apply bg-green-100 text-green-800;
-        }
-        
-        .status-pending {
-            @apply bg-yellow-100 text-yellow-800;
-        }
-        
-        .status-cancelled {
-            @apply bg-red-100 text-red-800;
-        }
-        
-        .status-completed {
-            @apply bg-blue-100 text-blue-800;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-container { transition: transform 0.3s ease; }
     </style>
 </head>
-<body class="bg-gray-50">
-    <div class="flex h-screen">
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-200">
         <!-- Sidebar -->
-        <div class="w-64 bg-gray-800 text-white">
-            <div class="p-4 border-b border-gray-700">
-                <h1 class="text-xl font-bold">RentalFlow AI</h1>
-            </div>
-            <nav class="p-2">
-                <a href="dashboard.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+        <div class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out z-30" id="sidebar">
+            <a href="/dashboard.html" class="flex items-center space-x-3">
+                <img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full">
+                <span class="text-2xl font-bold">RentalFlow</span>
+            </a>
+            <nav class="space-y-2">
+                <a href="/dashboard.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span>
                 </a>
-                <a href="fleet.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-car mr-2"></i> Fleet
+                <a href="/bookings.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white">
+                    <i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span>
                 </a>
-                <a href="bookings.html" class="block py-2 px-4 rounded bg-gray-700">
-                    <i class="fas fa-calendar-check mr-2"></i> Bookings
+                <a href="/customers.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-users w-6"></i><span class="ml-3">Customers</span>
                 </a>
-                <a href="customers.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-user-friends mr-2"></i> Customers
+                <a href="/fleet.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span>
                 </a>
-                <a href="accounting.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-calculator mr-2"></i> Accounting
+                <a href="/accounting.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-file-invoice-dollar w-6"></i><span class="ml-3">Accounting</span>
                 </a>
-                <a href="invoices.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-file-invoice-dollar mr-2"></i> Invoices
-                </a>
-                <a href="settings.html" class="block py-2 px-4 rounded hover:bg-gray-700">
-                    <i class="fas fa-cog mr-2"></i> Settings
+                 <a href="/invoices.html" class="sidebar-link flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span>
                 </a>
             </nav>
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 overflow-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold">Booking Management</h1>
-                    <button @click="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded flex items-center">
-                        <i class="fas fa-plus mr-2"></i> New Booking
-                    </button>
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="flex justify-between items-center p-6 bg-white border-b">
+                <div class="flex items-center">
+                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Manage Bookings</h1>
                 </div>
+                <button id="add-booking-button" class="flex items-center bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-2"></i> Add Booking
+                </button>
+            </header>
 
-                <!-- Bookings Table -->
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="booking in bookings" :key="booking.id">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="font-medium text-gray-900" x-text="getCustomerName(booking.customerId)"></div>
-                                        <div class="text-gray-500" x-text="booking.customerPhone"></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="font-medium text-gray-900" x-text="getVehicleModel(booking.vehicleId)"></div>
-                                        <div class="text-gray-500" x-text="booking.vehicleCategory"></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <div x-text="formatDate(booking.startDate)"></div>
-                                        <div>to</div>
-                                        <div x-text="formatDate(booking.endDate)"></div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="status-badge" 
-                                              :class="{
-                                                'status-confirmed': booking.status === 'Confirmed',
-                                                'status-pending': booking.status === 'Pending',
-                                                'status-cancelled': booking.status === 'Cancelled',
-                                                'status-completed': booking.status === 'Completed'
-                                              }"
-                                              x-text="booking.status"></span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        AED <span x-text="booking.totalAmount.toFixed(2)"></span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="#" @click.prevent="editBooking(booking)" class="text-yellow-600 hover:text-yellow-900 mr-3">Edit</a>
-                                        <a href="#" @click.prevent="deleteBooking(booking.id)" class="text-red-600 hover:text-red-900">Delete</a>
-                                    </td>
+            <!-- Content Body -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Booking List</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-gray-50 border-b">
+                                    <th class="p-4 font-medium text-gray-600">Customer</th>
+                                    <th class="p-4 font-medium text-gray-600">Vehicle</th>
+                                    <th class="p-4 font-medium text-gray-600">Dates</th>
+                                    <th class="p-4 font-medium text-gray-600">Total Price</th>
+                                    <th class="p-4 font-medium text-gray-600">Status</th>
+                                    <th class="p-4 font-medium text-gray-600">Actions</th>
                                 </tr>
-                            </template>
-                            <template x-if="bookings.length === 0">
-                                <tr>
-                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                        No bookings found. Create your first booking to get started.
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody id="bookings-table-body">
+                                <tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Loading bookings...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
-    <!-- Add Booking Modal -->
-    <div x-show="isAddModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg w-full max-w-3xl p-6">
-            <h2 class="text-2xl font-bold mb-4" x-text="isEditing ? 'Edit Booking' : 'Create New Booking'"></h2>
-            
-            <form @submit.prevent="saveBooking">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <!-- Add/Edit Booking Modal -->
+    <div id="booking-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-container bg-white w-full max-w-3xl mx-auto rounded-lg shadow-lg z-50 transform scale-95">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 id="modal-title" class="text-xl font-semibold">Add New Booking</h3>
+                <button id="close-modal-button" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <form id="booking-form" class="p-6 space-y-6">
+                <input type="hidden" id="booking-id">
+                <!-- Top Section: Customer, Vehicle, Dates -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                        <select x-model="formData.customerId" class="w-full border border-gray-300 rounded p-2" required>
-                            <option value="">Select Customer</option>
-                            <template x-for="customer in customers" :key="customer.id">
-                                <option :value="customer.id" x-text="customer.name"></option>
-                            </template>
-                        </select>
+                        <label for="customer" class="block text-sm font-medium text-gray-700">Customer</label>
+                        <select id="customer" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Vehicle</label>
-                        <select x-model="formData.vehicleId" class="w-full border border-gray-300 rounded p-2" required>
-                            <option value="">Select Vehicle</option>
-                            <template x-for="vehicle in fleet" :key="vehicle.id">
-                                <option :value="vehicle.id" x-text="vehicle.model"></option>
-                            </template>
-                        </select>
+                        <label for="vehicle" class="block text-sm font-medium text-gray-700">Vehicle</label>
+                        <select id="vehicle" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                        <input type="date" x-model="formData.startDate" class="w-full border border-gray-300 rounded p-2" required>
+                        <label for="startDate" class="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input type="date" id="startDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                        <input type="date" x-model="formData.endDate" class="w-full border border-gray-300 rounded p-2" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        <select x-model="formData.status" class="w-full border border-gray-300 rounded p-2" required>
-                            <option value="Pending">Pending</option>
-                            <option value="Confirmed">Confirmed</option>
-                            <option value="Cancelled">Cancelled</option>
-                            <option value="Completed">Completed</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Amount (AED)</label>
-                        <input type="number" x-model="formData.totalAmount" min="0" step="0.01" class="w-full border border-gray-300 rounded p-2" required>
+                        <label for="endDate" class="block text-sm font-medium text-gray-700">End Date</label>
+                        <input type="date" id="endDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                 </div>
-                
-                <div class="flex justify-end space-x-3">
-                    <button type="button" @click="isAddModalOpen = false" class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        Save Booking
-                    </button>
+
+                <!-- Middle Section: Financials -->
+                <div class="border-t pt-6 space-y-4">
+                    <h4 class="text-lg font-medium text-gray-800">Financial Details</h4>
+                    <!-- Rental Rate -->
+                    <div class="flex items-end gap-4">
+                        <div class="flex-grow">
+                            <label for="rentalRate" class="block text-sm font-medium text-gray-700">Daily Rental Rate ($)</label>
+                            <input type="number" step="0.01" id="rentalRate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500">Days</p>
+                            <p id="days-display" class="font-bold text-lg">0</p>
+                        </div>
+                        <div class="flex-grow">
+                            <label class="block text-sm font-medium text-gray-700">Rental Total</label>
+                            <p id="rental-total-display" class="mt-1 block w-full px-3 py-2 bg-gray-100 rounded-md">$0.00</p>
+                        </div>
+                    </div>
+                    <!-- Additional Charges -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Additional Charges</label>
+                        <div id="additional-charges-container" class="space-y-2">
+                            <!-- Dynamic charges will be added here -->
+                        </div>
+                        <button type="button" id="add-charge-button" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold"><i class="fas fa-plus mr-1"></i> Add Charge</button>
+                    </div>
+                </div>
+
+                <!-- Bottom Section: Summary & Status -->
+                <div class="border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <!-- Summary -->
+                    <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                        <h4 class="text-md font-semibold text-gray-800">Summary</h4>
+                        <div class="flex justify-between text-sm"><span class="text-gray-600">Subtotal</span><span id="summary-subtotal">$0.00</span></div>
+                        <div class="flex justify-between items-center text-sm">
+                            <div class="flex items-center gap-2">
+                                <label for="taxRate" class="text-gray-600">Tax (%)</label>
+                                <input type="number" id="taxRate" value="5" class="w-16 p-1 border border-gray-300 rounded-md text-sm">
+                            </div>
+                            <span id="summary-tax">$0.00</span>
+                        </div>
+                        <div class="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span class="text-gray-800">Total</span><span id="summary-total">$0.00</span></div>
+                    </div>
+                    <!-- Status -->
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700">Booking Status</label>
+                        <select id="status" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex justify-end pt-4">
+                    <button type="button" id="cancel-button" class="bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700">Save Booking</button>
                 </div>
             </form>
         </div>
     </div>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
 
     <script>
-        function bookingsController() {
-            return {
-                bookings: [],
-                fleet: [],
-                customers: [],
-                isAddModalOpen: false,
-                isEditing: false,
-                formData: {
-                    customerId: '',
-                    vehicleId: '',
-                    startDate: new Date().toISOString().split('T')[0],
-                    endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-                    status: 'Pending',
-                    totalAmount: 0
-                },
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof db === 'undefined') { console.error("Firestore is not initialized."); return; }
+
+            // --- UI Elements ---
+            const menuButton = document.getElementById('menu-button');
+            const sidebar = document.getElementById('sidebar');
+            const addBookingButton = document.getElementById('add-booking-button');
+            const bookingModal = document.getElementById('booking-modal');
+            const closeModalButton = document.getElementById('close-modal-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const bookingForm = document.getElementById('booking-form');
+            const bookingsTableBody = document.getElementById('bookings-table-body');
+            const addChargeButton = document.getElementById('add-charge-button');
+            const chargesContainer = document.getElementById('additional-charges-container');
+            
+            // Form fields
+            const customerSelect = document.getElementById('customer');
+            const vehicleSelect = document.getElementById('vehicle');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const rentalRateInput = document.getElementById('rentalRate');
+            const taxRateInput = document.getElementById('taxRate');
+
+            // --- Modal Control ---
+            const openModal = (mode, booking = {}) => {
+                bookingForm.reset();
+                chargesContainer.innerHTML = ''; // Clear dynamic charges
+                populateDropdowns(booking.vehicleId);
                 
-                async loadBookings() {
-                    try {
-                        const response = await fetch('/api/bookings');
-                        this.bookings = await response.json();
-                    } catch (error) {
-                        console.error('Error loading bookings:', error);
+                if (mode === 'edit' && booking.financials) {
+                    document.getElementById('modal-title').textContent = 'Edit Booking';
+                    document.getElementById('booking-id').value = booking.id;
+                    customerSelect.value = booking.customerId;
+                    vehicleSelect.value = booking.vehicleId;
+                    startDateInput.value = new Date(booking.startDate.seconds * 1000).toISOString().split('T')[0];
+                    endDateInput.value = new Date(booking.endDate.seconds * 1000).toISOString().split('T')[0];
+                    document.getElementById('status').value = booking.status;
+
+                    // Populate financials
+                    rentalRateInput.value = booking.financials.rentalRate.rate;
+                    taxRateInput.value = (booking.financials.tax.rate * 100).toFixed(0);
+                    if(booking.financials.additionalCharges) {
+                        booking.financials.additionalCharges.forEach(charge => addChargeRow(charge.description, charge.amount));
                     }
-                },
-                
-                async loadFleet() {
-                    try {
-                        const response = await fetch('/api/fleet');
-                        this.fleet = await response.json();
-                    } catch (error) {
-                        console.error('Error loading fleet:', error);
-                    }
-                },
-                
-                async loadCustomers() {
-                    try {
-                        const response = await fetch('/api/customers');
-                        this.customers = await response.json();
-                    } catch (error) {
-                        console.error('Error loading customers:', error);
-                    }
-                },
-                
-                getCustomerName(customerId) {
-                    const customer = this.customers.find(c => c.id === customerId);
-                    return customer ? customer.name : 'Unknown';
-                },
-                
-                getVehicleModel(vehicleId) {
-                    const vehicle = this.fleet.find(v => v.id === vehicleId);
-                    return vehicle ? vehicle.model : 'Unknown';
-                },
-                
-                formatDate(dateString) {
-                    if (!dateString) return '';
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString();
-                },
-                
-                openAddModal() {
-                    this.isEditing = false;
-                    this.formData = {
-                        customerId: '',
-                        vehicleId: '',
-                        startDate: new Date().toISOString().split('T')[0],
-                        endDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-                        status: 'Pending',
-                        totalAmount: 0
-                    };
-                    this.isAddModalOpen = true;
-                },
-                
-                editBooking(booking) {
-                    this.isEditing = true;
-                    this.formData = { ...booking };
-                    this.isAddModalOpen = true;
-                },
-                
-                async saveBooking() {
-                    const url = this.isEditing 
-                        ? `/api/bookings/${this.formData.id}` 
-                        : '/api/bookings';
-                        
-                    const method = this.isEditing ? 'PUT' : 'POST';
-                    
-                    try {
-                        const response = await fetch(url, {
-                            method,
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.formData)
-                        });
-                        
-                        if (response.ok) {
-                            this.isAddModalOpen = false;
-                            this.loadBookings();
-                        }
-                    } catch (error) {
-                        console.error('Error saving booking:', error);
-                        alert('Failed to save booking: ' + error.message);
-                    }
-                },
-                
-                async deleteBooking(id) {
-                    if (!confirm('Are you sure you want to delete this booking?')) return;
-                    
-                    try {
-                        await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
-                        this.loadBookings();
-                    } catch (error) {
-                        console.error('Error deleting booking:', error);
-                        alert('Failed to delete booking: ' + error.message);
+                } else {
+                    document.getElementById('modal-title').textContent = 'Add New Booking';
+                    document.getElementById('booking-id').value = '';
+                    addChargeRow(); // Start with one empty charge row
+                }
+                updateCalculations();
+                bookingModal.classList.remove('hidden');
+            };
+
+            const closeModal = () => bookingModal.classList.add('hidden');
+
+            addBookingButton.addEventListener('click', () => openModal('add'));
+            closeModalButton.addEventListener('click', closeModal);
+            cancelButton.addEventListener('click', closeModal);
+            menuButton.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+
+            // --- Dynamic Form Logic ---
+            addChargeButton.addEventListener('click', () => addChargeRow());
+
+            function addChargeRow(description = '', amount = '') {
+                const chargeRow = document.createElement('div');
+                chargeRow.className = 'flex items-center gap-2';
+                chargeRow.innerHTML = `
+                    <input type="text" placeholder="Description (e.g., Fuel)" class="charge-desc mt-1 block w-2/3 px-3 py-2 border border-gray-300 rounded-md" value="${description}">
+                    <input type="number" step="0.01" placeholder="Amount" class="charge-amount mt-1 block w-1/3 px-3 py-2 border border-gray-300 rounded-md" value="${amount}">
+                    <button type="button" class="remove-charge-btn text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                `;
+                chargesContainer.appendChild(chargeRow);
+                chargeRow.querySelector('.remove-charge-btn').addEventListener('click', () => {
+                    chargeRow.remove();
+                    updateCalculations();
+                });
+                chargeRow.querySelector('.charge-amount').addEventListener('input', updateCalculations);
+            }
+
+            // --- Financial Calculations ---
+            [startDateInput, endDateInput, rentalRateInput, taxRateInput].forEach(el => el.addEventListener('input', updateCalculations));
+
+            function updateCalculations() {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+                const days = (endDate - startDate) > 0 ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) : 0;
+                document.getElementById('days-display').textContent = days;
+
+                const rentalRate = parseFloat(rentalRateInput.value) || 0;
+                const rentalTotal = days * rentalRate;
+                document.getElementById('rental-total-display').textContent = `$${rentalTotal.toFixed(2)}`;
+
+                let additionalChargesTotal = 0;
+                chargesContainer.querySelectorAll('.charge-amount').forEach(input => {
+                    additionalChargesTotal += parseFloat(input.value) || 0;
+                });
+
+                const subtotal = rentalTotal + additionalChargesTotal;
+                document.getElementById('summary-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+
+                const taxRate = (parseFloat(taxRateInput.value) || 0) / 100;
+                const taxAmount = subtotal * taxRate;
+                document.getElementById('summary-tax').textContent = `$${taxAmount.toFixed(2)}`;
+
+                const total = subtotal + taxAmount;
+                document.getElementById('summary-total').textContent = `$${total.toFixed(2)}`;
+            }
+
+
+            // --- Data Population for Form ---
+            async function populateDropdowns(editingVehicleId = null) {
+                // Populate Customers
+                const customersSnapshot = await db.collection('customers').orderBy('fullName').get();
+                customerSelect.innerHTML = '<option value="">Select a customer</option>';
+                customersSnapshot.forEach(doc => {
+                    customerSelect.innerHTML += `<option value="${doc.id}">${doc.data().fullName}</option>`;
+                });
+
+                // Populate Vehicles
+                const vehiclesSnapshot = await db.collection('vehicles').where('status', '==', 'available').get();
+                let vehicleOptions = '<option value="">Select an available vehicle</option>';
+                vehiclesSnapshot.forEach(doc => {
+                    const v = doc.data();
+                    vehicleOptions += `<option value="${doc.id}">${v.make} ${v.model} (${v.plateNumber})</option>`;
+                });
+                // If editing, add the current vehicle to the list if it's not already there
+                if (editingVehicleId && !vehiclesSnapshot.docs.some(d => d.id === editingVehicleId)) {
+                    const vehicleDoc = await db.collection('vehicles').doc(editingVehicleId).get();
+                    if (vehicleDoc.exists) {
+                        const v = vehicleDoc.data();
+                        vehicleOptions += `<option value="${vehicleDoc.id}">${v.make} ${v.model} (${v.plateNumber}) - Currently Rented</option>`;
                     }
                 }
-            };
-        }
+                vehicleSelect.innerHTML = vehicleOptions;
+            }
+
+            // --- Firestore CRUD ---
+            const bookingsRef = db.collection('bookings');
+
+            // C: Create / U: Update Booking
+            bookingForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('booking-id').value;
+
+                // --- Build the new financials object ---
+                const days = parseInt(document.getElementById('days-display').textContent) || 0;
+                const rentalRate = parseFloat(rentalRateInput.value) || 0;
+                const taxRate = (parseFloat(taxRateInput.value) || 0) / 100;
+                
+                const additionalCharges = [];
+                chargesContainer.querySelectorAll('.flex').forEach(row => {
+                    const description = row.querySelector('.charge-desc').value;
+                    const amount = parseFloat(row.querySelector('.charge-amount').value);
+                    if(description && amount > 0) {
+                        additionalCharges.push({ description, amount });
+                    }
+                });
+
+                const rentalTotal = days * rentalRate;
+                const additionalTotal = additionalCharges.reduce((sum, charge) => sum + charge.amount, 0);
+                const subtotal = rentalTotal + additionalTotal;
+                const taxAmount = subtotal * taxRate;
+                const total = subtotal + taxAmount;
+
+                const financials = {
+                    rentalRate: { description: "Daily Rental Rate", rate: rentalRate, days: days, total: rentalTotal },
+                    additionalCharges: additionalCharges,
+                    subtotal: subtotal,
+                    tax: { rate: taxRate, amount: taxAmount },
+                    total: total
+                };
+                // --- End of building financials object ---
+
+                const bookingData = {
+                    customerId: customerSelect.value,
+                    customerName: customerSelect.options[customerSelect.selectedIndex].text,
+                    vehicleId: vehicleSelect.value,
+                    vehicleName: vehicleSelect.options[vehicleSelect.selectedIndex].text,
+                    startDate: new Date(startDateInput.value),
+                    endDate: new Date(endDateInput.value),
+                    status: document.getElementById('status').value,
+                    invoiced: false, // Always reset to false on save
+                    financials: financials, // The new detailed object
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (id) {
+                    bookingsRef.doc(id).update(bookingData).then(closeModal);
+                } else {
+                    bookingData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    bookingsRef.add(bookingData).then(() => {
+                        db.collection('vehicles').doc(bookingData.vehicleId).update({ status: 'rented' });
+                        closeModal();
+                    });
+                }
+            });
+
+            // R: Read Bookings (Real-time)
+            bookingsRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                if (snapshot.empty) {
+                    bookingsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No bookings found.</td></tr>`;
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const booking = { id: doc.id, ...doc.data() };
+                    const status = booking.status || 'Unknown';
+                    const total = booking.financials ? booking.financials.total : (booking.totalPrice || 0); // Backward compatibility
+                    
+                    html += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-4">${booking.customerName}</td>
+                            <td class="p-4">${booking.vehicleName}</td>
+                            <td class="p-4">${new Date(booking.startDate.seconds * 1000).toLocaleDateString()} - ${new Date(booking.endDate.seconds * 1000).toLocaleDateString()}</td>
+                            <td class="p-4 font-medium">$${total.toFixed(2)}</td>
+                            <td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full">${status}</span></td>
+                            <td class="p-4 space-x-2">
+                                <button class="edit-btn text-blue-500" data-id="${booking.id}"><i class="fas fa-edit"></i></button>
+                                <button class="delete-btn text-red-500" data-id="${booking.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                bookingsTableBody.innerHTML = html;
+            });
+
+            // D: Delete Booking
+            bookingsTableBody.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                const id = target.dataset.id;
+                
+                if (target.classList.contains('delete-btn')) {
+                    if (confirm('Are you sure?')) {
+                        bookingsRef.doc(id).get().then(doc => {
+                            if (doc.exists) db.collection('vehicles').doc(doc.data().vehicleId).update({ status: 'available' });
+                        }).then(() => bookingsRef.doc(id).delete());
+                    }
+                }
+
+                if (target.classList.contains('edit-btn')) {
+                    bookingsRef.doc(id).get().then(doc => {
+                        if (doc.exists) openModal('edit', { id: doc.id, ...doc.data() });
+                    });
+                }
+            });
+        });
     </script>
 </body>
 </html>
