@@ -7,8 +7,10 @@
     "start": "node api/server.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
+    "express": "^4.19.2",
     "firebase-admin": "^12.1.0",
-    "pdfkit": "^0.13.0"
+    "pdf-lib": "^1.17.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5"
   }
 }
