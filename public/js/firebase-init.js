@@ -1,21 +1,27 @@
 // This file initializes the connection to Firebase for all your frontend pages.
 
-// IMPORTANT: Replace these placeholder values with your ACTUAL Firebase project configuration.
-// You can find this in your Firebase project settings under "General" -> "Your apps" -> "SDK setup and configuration".
+// Your web app's Firebase configuration - Provided by you.
 const firebaseConfig = {
-  apiKey: "AIzaSyAZL-KL0vyCw4qixtzJhP7H8PuyytDWQhs", // This is the key you provided
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
+  authDomain: "rentalflow-ai-app.firebaseapp.com",
+  projectId: "rentalflow-ai-app",
+  storageBucket: "rentalflow-ai-app.firebasestorage.app",
+  messagingSenderId: "880755901556",
+  appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
 };
 
 // Initialize Firebase
+let db; // Make db globally accessible within this scope
 try {
-  const app = firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  console.log("Firebase client initialized successfully.");
+  if (!firebase.apps.length) {
+    const app = firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase client-side SDK initialized successfully.");
+  } else {
+    const app = firebase.app();
+    db = firebase.firestore();
+    console.log("Firebase client-side SDK already initialized.");
+  }
 } catch (e) {
   console.error("Error initializing Firebase on client:", e);
 }
