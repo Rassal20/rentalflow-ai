@@ -1,41 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoices - RentalFlow AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0D1117;
+            --bg-secondary: #161B22;
+            --border-color: #30363D;
+            --text-primary: #E6EDF3;
+            --text-secondary: #8B949E;
+            --accent: #22D3EE;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); }
+        h1, h2, h3, .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+        .sidebar { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
+        .header { background-color: var(--bg-primary); border-bottom: 1px solid var(--border-color); }
+        .card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .modal-content { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .form-input { background-color: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); outline: none; }
+        .btn-primary { background-color: var(--accent); color: var(--bg-primary); font-weight: bold; }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <div class="flex h-screen bg-gray-200">
+<body class="text-gray-300">
+    <div class="flex h-screen">
         <!-- Sidebar -->
-        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition z-30">
-            <a href="/dashboard.html" class="flex items-center space-x-3"><img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full"><span class="text-2xl font-bold">RentalFlow</span></a>
-            <nav class="space-y-2">
-                <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
-                <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
-                <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
-                <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
-                <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
-            </nav>
+        <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
+            <div class="flex-grow">
+                <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
+                    <img id="company-logo-sidebar" src="https://placehold.co/40x40/161B22/30363D?text=..." alt="Logo" class="w-10 h-10 rounded-lg object-cover">
+                    <span id="company-name-sidebar" class="text-2xl font-bold font-rajdhani text-white">RentalFlow</span>
+                </a>
+                <nav class="space-y-2">
+                    <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+                    <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
+                    <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
+                    <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                    <a href="/financials.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-chart-line w-6"></i><span class="ml-3">Financials</span></a>
+                    <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-file-alt w-6 text-cyan-400"></i><span class="ml-3">Invoices</span></a>
+                </nav>
+            </div>
+            <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a></div>
         </div>
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="flex justify-between items-center p-6 bg-white border-b">
+            <header class="header flex justify-between items-center p-6">
                 <div class="flex items-center">
-                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
-                    <h1 class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Invoices</h1>
+                    <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 class="text-2xl font-bold text-white ml-4 md:ml-0">Invoices</h1>
                 </div>
-                <button id="create-invoice-button" class="flex items-center bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition"><i class="fas fa-plus mr-2"></i> Create Invoice</button>
+                <button id="create-invoice-button" class="btn-primary flex items-center px-4 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-plus mr-2"></i> Create Invoice</button>
             </header>
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-                <div class="bg-white p-6 rounded-lg shadow-md">
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+                <div class="card p-6 rounded-lg">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead><tr class="bg-gray-50 border-b"><th class="p-4">Invoice #</th><th class="p-4">Customer</th><th class="p-4">Date</th><th class="p-4 text-right">Amount</th><th class="p-4 text-center">Status</th><th class="p-4 text-center">Actions</th></tr></thead>
+                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Invoice #</th><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Date</th><th class="p-4 text-gray-400 text-right">Amount</th><th class="p-4 text-gray-400 text-center">Status</th><th class="p-4 text-gray-400 text-center">Actions</th></tr></thead>
                             <tbody id="invoices-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Initializing...</td></tr></tbody>
                         </table>
                     </div>
@@ -44,13 +71,13 @@
         </div>
     </div>
     <!-- Create Invoice Modal -->
-    <div id="invoice-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white w-full max-w-lg mx-auto rounded-lg shadow-lg">
-            <div class="flex justify-between items-center p-4 border-b"><h3 class="text-xl font-semibold">Create New Invoice</h3><button id="close-modal-button" class="text-gray-500 hover:text-gray-800">&times;</button></div>
+    <div id="invoice-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 hidden">
+        <div class="modal-content w-full max-w-lg mx-auto rounded-lg shadow-lg">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Create New Invoice</h3><button id="close-modal-button" class="text-gray-400 hover:text-white">&times;</button></div>
             <div class="p-6">
-                <label for="booking-select" class="block text-sm font-medium">Select a Booking to Invoice</label>
-                <select id="booking-select" class="mt-1 block w-full p-2 border rounded-md"></select>
-                <div class="flex justify-end pt-6"><button type="button" id="cancel-button" class="bg-gray-200 px-4 py-2 rounded-lg mr-2">Cancel</button><button id="generate-invoice-button" class="bg-blue-600 text-white px-4 py-2 rounded-lg" disabled>Generate Invoice</button></div>
+                <label for="booking-select" class="block text-sm font-medium text-gray-400">Select a Booking to Invoice</label>
+                <select id="booking-select" class="form-input mt-1 block w-full p-2 rounded-md"></select>
+                <div class="flex justify-end pt-6"><button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-lg mr-2">Cancel</button><button id="generate-invoice-button" class="btn-primary px-4 py-2 rounded-lg" disabled>Generate Invoice</button></div>
             </div>
         </div>
     </div>
@@ -62,6 +89,23 @@
             setTimeout(() => {
                 const db = firebase.firestore();
                 if (!db) { return; }
+
+                // --- Sidebar Branding ---
+                const companyProfileRef = db.collection('company_profile').doc('main');
+                companyProfileRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const companyNameEl = document.getElementById('company-name-sidebar');
+                        const companyLogoEl = document.getElementById('company-logo-sidebar');
+                        if (data.companyName) { companyNameEl.textContent = data.companyName; }
+                        if (data.logoUrl) { companyLogoEl.src = data.logoUrl; } 
+                        else {
+                            const initial = (data.companyName || 'R').charAt(0);
+                            companyLogoEl.src = `https://placehold.co/40x40/161B22/22D3EE?text=${initial}`;
+                        }
+                    }
+                });
+
                 const invoicesRef = db.collection('invoices');
                 const bookingsRef = db.collection('bookings');
                 const createInvoiceButton = document.getElementById('create-invoice-button');
@@ -94,13 +138,18 @@
                         const financials = bookingData.financials;
                         const customerDoc = await db.collection('customers').doc(bookingData.customerId).get();
                         const customerData = customerDoc.exists ? customerDoc.data() : {};
-                        
-                        // We will get company details from a 'company_profile' collection
                         const companyDoc = await db.collection('company_profile').doc('main').get();
                         const companyData = companyDoc.exists ? companyDoc.data() : {};
-
-                        const invoiceItems = [{ description: `Rental of ${bookingData.vehicleName} (${financials.rentalRate.days} days @ $${financials.rentalRate.rate.toFixed(2)}/day)`, total: financials.rentalRate.total }];
-                        financials.additionalCharges.forEach(c => invoiceItems.push({ description: c.description, total: c.amount }));
+                        
+                        // *** NEW: Build itemized list including fines ***
+                        const invoiceItems = [];
+                        invoiceItems.push({ description: `Rental of ${bookingData.vehicleName} (${financials.rentalRate.days} days @ $${financials.rentalRate.rate.toFixed(2)}/day)`, total: financials.rentalRate.total });
+                        if (financials.additionalCharges) {
+                            financials.additionalCharges.forEach(c => invoiceItems.push({ description: c.description, total: c.amount }));
+                        }
+                        if (financials.fines) {
+                            financials.fines.forEach(f => invoiceItems.push({ description: `Fine: ${f.description}`, total: f.amount }));
+                        }
 
                         const invoiceData = {
                             invoiceNumber: `INV-${Date.now()}`, bookingId: bookingId, issueDate: new Date(),
@@ -111,10 +160,8 @@
                         };
                         const newInvoice = await invoicesRef.add(invoiceData);
                         await bookingsRef.doc(bookingId).update({ invoiced: true });
-                        
-                        // Create a corresponding entry in a 'transactions' collection for accounting
                         await db.collection('transactions').add({
-                            description: `Invoice ${invoiceData.invoiceNumber} for ${invoiceData.customer.name}`, type: 'income', amount: invoiceData.total,
+                            description: `Invoice ${invoiceData.invoiceNumber}`, type: 'income', amount: invoiceData.total,
                             category: 'Rental Income', date: new Date(), invoiceId: newInvoice.id
                         });
                         closeModal();
@@ -126,9 +173,11 @@
                     if(snapshot.empty) { invoicesTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No invoices found.</td></tr>`; return; }
                     invoicesTableBody.innerHTML = snapshot.docs.map(doc => {
                         const inv = { id: doc.id, ...doc.data() };
-                        return `<tr class="border-b hover:bg-gray-50"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">$${inv.total.toFixed(2)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs rounded-full ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-blue-500"><i class="fas fa-eye"></i> View</a></td></tr>`;
+                        const statusClass = inv.status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400';
+                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">$${inv.total.toFixed(2)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-cyan-400 hover:text-cyan-300"><i class="fas fa-eye"></i> View</a></td></tr>`;
                     }).join('');
                 });
+                document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
             }, 200);
         });
     </script>

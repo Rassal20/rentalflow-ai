@@ -1,43 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice Detail - RentalFlow AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; }
+        :root {
+            --bg-primary: #0D1117;
+            --bg-secondary: #161B22;
+            --border-color: #30363D;
+            --text-primary: #E6EDF3;
+            --text-secondary: #8B949E;
+            --accent: #22D3EE;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); -webkit-print-color-adjust: exact; }
+        h1, h2, h3, .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
         @media print {
-            body { margin: 0; padding: 0; }
+            body { background-color: white; color: black; }
             .no-print { display: none !important; }
-            .invoice-box { box-shadow: none !important; border: none !important; margin: 0 !important; max-width: 100% !important; }
+            .invoice-box { box-shadow: none !important; border: none !important; background-color: white !important; }
+            .print-text-black { color: black !important; }
+            .print-text-gray { color: #555 !important; }
+            .print-bg-gray { background-color: #f3f4f6 !important; }
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div id="loader" class="flex items-center justify-center h-screen">
-        <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
-        <span class="ml-4 text-xl">Loading Invoice...</span>
-    </div>
+<body class="text-gray-300">
+    <div id="loader" class="flex items-center justify-center h-screen"><i class="fas fa-spinner fa-spin text-4xl text-cyan-400"></i></div>
     <div id="invoice-content" class="hidden">
-        <div class="bg-gray-100 p-4 sm:p-8 no-print">
+        <div class="bg-[--bg-primary] p-4 sm:p-8 no-print">
             <div class="max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-4">
-                    <a href="/invoices.html" class="text-blue-600 hover:underline"><i class="fas fa-arrow-left mr-2"></i>Back to Invoices</a>
-                    <button onclick="window.print()" class="bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-blue-700"><i class="fas fa-print mr-2"></i>Print / Save as PDF</button>
+                    <a href="/invoices.html" class="text-cyan-400 hover:underline"><i class="fas fa-arrow-left mr-2"></i>Back to Invoices</a>
+                    <button onclick="window.print()" class="bg-cyan-500 text-black font-bold px-6 py-2 rounded-lg"><i class="fas fa-print mr-2"></i>Print / PDF</button>
                 </div>
-                <div id="invoice-box" class="invoice-box bg-white rounded-lg shadow-lg p-8 sm:p-12">
-                    <!-- JS will populate this -->
-                </div>
+                <div id="invoice-box" class="invoice-box bg-[--bg-secondary] border border-[--border-color] rounded-lg shadow-lg p-8 sm:p-12"></div>
             </div>
         </div>
-        <div class="hidden print:block">
-            <div id="printable-invoice" class="bg-white p-12">
-                 <!-- This will be a clone of the invoice-box for printing -->
-            </div>
-        </div>
+        <div class="hidden print:block"><div id="printable-invoice" class="bg-white p-12"></div></div>
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -49,71 +54,55 @@
                 if (!db) { return; }
                 const loader = document.getElementById('loader');
                 const invoiceBox = document.getElementById('invoice-box');
-                const printableInvoice = document.getElementById('printable-invoice');
                 const invoiceId = new URLSearchParams(window.location.search).get('id');
-
-                if (!invoiceId) {
-                    loader.innerHTML = '<p class="text-red-500 text-center">Error: No Invoice ID provided in the URL.</p>';
-                    return;
-                }
+                if (!invoiceId) { loader.innerHTML = '<p class="text-red-500 text-center font-bold">Error: No Invoice ID provided.</p>'; return; }
                 try {
                     const invoiceDoc = await db.collection('invoices').doc(invoiceId).get();
-                    if (!invoiceDoc.exists) throw new Error('Invoice not found in the database.');
-                    
+                    if (!invoiceDoc.exists) throw new Error('Invoice not found.');
                     const invoice = invoiceDoc.data();
                     const company = invoice.company || {};
                     const customer = invoice.customer || {};
-
-                    const itemsHtml = invoice.items.map(item => `
-                        <tr class="border-b">
-                            <td class="py-3 pr-3">${item.description}</td>
-                            <td class="py-3 pl-3 text-right">$${item.total.toFixed(2)}</td>
-                        </tr>`).join('');
-
+                    const itemsHtml = invoice.items.map(item => `<tr class="border-b border-[--border-color] print:border-gray-200"><td class="py-3 pr-3">${item.description}</td><td class="py-3 pl-3 text-right">$${item.total.toFixed(2)}</td></tr>`).join('');
                     const invoiceHtml = `
-                        <div class="flex justify-between items-start pb-8 border-b">
+                        <div class="flex justify-between items-start pb-8 border-b border-[--border-color] print:border-gray-200">
                             <div>
-                                <h2 class="text-2xl font-bold text-gray-800">${company.name || 'Your Company Name'}</h2>
-                                <p class="text-gray-500">${company.address || 'Your Company Address'}</p>
-                                <p class="text-gray-500">TRN: ${company.taxNumber || 'N/A'}</p>
+                                <h2 class="text-2xl font-bold text-white print-text-black">${company.name || 'Your Company'}</h2>
+                                <p class="text-[--text-secondary] print-text-gray">${company.address || ''}</p>
+                                <p class="text-[--text-secondary] print-text-gray">TRN: ${company.taxNumber || 'N/A'}</p>
                             </div>
                             <div class="text-right">
-                                <h1 class="text-4xl font-bold text-gray-800 uppercase">Invoice</h1>
-                                <p class="text-gray-500"># ${invoice.invoiceNumber}</p>
+                                <h1 class="text-4xl font-bold uppercase text-white print-text-black">Invoice</h1>
+                                <p class="text-[--text-secondary] print-text-gray"># ${invoice.invoiceNumber}</p>
                             </div>
                         </div>
                         <div class="flex justify-between items-start py-8">
                             <div>
-                                <h3 class="font-semibold text-gray-800 mb-1">Bill To</h3>
-                                <p class="font-bold text-gray-700">${customer.name}</p>
-                                <p class="text-gray-500">${customer.address || ''}</p>
-                                <p class="text-gray-500">${customer.email || ''}</p>
+                                <h3 class="font-semibold text-gray-400 print-text-gray mb-1">Bill To</h3>
+                                <p class="font-bold text-white print-text-black">${customer.name}</p>
+                                <p class="text-[--text-secondary] print-text-gray">${customer.address || ''}</p>
+                                <p class="text-[--text-secondary] print-text-gray">${customer.email || ''}</p>
                             </div>
-                            <div class="text-right">
-                                <p><strong>Issue Date:</strong> ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}</p>
-                                <p><strong>Due Date:</strong> ${new Date(invoice.dueDate.seconds * 1000).toLocaleDateString()}</p>
+                            <div class="text-right text-[--text-secondary] print-text-gray">
+                                <p><strong class="text-gray-400 print-text-gray">Issue Date:</strong> ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}</p>
+                                <p><strong class="text-gray-400 print-text-gray">Due Date:</strong> ${new Date(invoice.dueDate.seconds * 1000).toLocaleDateString()}</p>
                             </div>
                         </div>
-                        <table class="w-full text-left mb-8">
-                            <thead><tr class="bg-gray-100"><th class="p-3 font-semibold text-gray-700">Description</th><th class="p-3 font-semibold text-gray-700 text-right">Amount</th></tr></thead>
+                        <table class="w-full text-left mb-8 text-white print-text-black">
+                            <thead><tr class="bg-gray-800 print-bg-gray"><th class="p-3 font-semibold">Description</th><th class="p-3 font-semibold text-right">Amount</th></tr></thead>
                             <tbody>${itemsHtml}</tbody>
                         </table>
                         <div class="flex justify-end">
-                            <div class="w-full max-w-xs space-y-2">
-                                <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>$${invoice.subtotal.toFixed(2)}</span></div>
-                                <div class="flex justify-between text-gray-600"><span>VAT (5%)</span><span>$${invoice.taxAmount.toFixed(2)}</span></div>
-                                <div class="flex justify-between font-bold text-gray-800 text-xl mt-2 pt-2 border-t"><span>Total Due</span><span>$${invoice.total.toFixed(2)}</span></div>
+                            <div class="w-full max-w-xs space-y-2 text-[--text-secondary] print-text-gray">
+                                <div class="flex justify-between"><span>Subtotal</span><span>$${invoice.subtotal.toFixed(2)}</span></div>
+                                <div class="flex justify-between"><span>VAT</span><span>$${invoice.taxAmount.toFixed(2)}</span></div>
+                                <div class="flex justify-between font-bold text-xl mt-2 pt-2 border-t border-[--border-color] print:border-gray-200 text-white print-text-black"><span>Total Due</span><span>$${invoice.total.toFixed(2)}</span></div>
                             </div>
                         </div>`;
-
                     invoiceBox.innerHTML = invoiceHtml;
-                    printableInvoice.innerHTML = invoiceHtml;
+                    document.getElementById('printable-invoice').innerHTML = invoiceHtml;
                     loader.style.display = 'none';
                     document.getElementById('invoice-content').classList.remove('hidden');
-                } catch (error) {
-                    loader.innerHTML = `<p class="text-red-500 text-center">Error: ${error.message}</p>`;
-                    console.error("Error loading invoice:", error);
-                }
+                } catch (error) { loader.innerHTML = `<p class="text-red-500 text-center font-bold">Error: ${error.message}</p>`; }
             }, 200);
         });
     </script>

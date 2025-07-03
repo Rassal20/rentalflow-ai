@@ -1,211 +1,190 @@
 <!DOCTYPE html>
-<html lang="en" x-data="vehicleController()" x-init="loadVehicle()">
+<html lang="en">
 <head>
-    <!-- Same head as dashboard.html -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Details - RentalFlow AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body class="bg-gray-900 text-white">
-    <div class="container mx-auto p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold">Vehicle Details</h1>
-            <button @click="goBack()" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded">
-                &larr; Back to Fleet
-            </button>
-        </div>
-        
-        <!-- Vehicle Info -->
-        <div class="bg-gray-800 rounded-lg p-6 mb-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <h2 class="text-xl font-semibold mb-2" x-text="vehicle.model"></h2>
-                    <p class="text-gray-400" x-text="vehicle.category"></p>
-                </div>
-                
-                <div>
-                    <p><span class="text-gray-400">Plate:</span> <span x-text="vehicle.plateNumber || 'N/A'"></span></p>
-                    <p><span class="text-gray-400">Color:</span> <span x-text="vehicle.color"></span></p>
-                    <p><span class="text-gray-400">Mileage:</span> <span x-text="vehicle.currentMileage || '0'"></span> km</p>
-                </div>
-                
-                <div>
-                    <p><span class="text-gray-400">Status:</span> 
-                        <span :class="{
-                            'text-green-500': vehicle.status === 'Available',
-                            'text-yellow-500': vehicle.status === 'On Rent',
-                            'text-red-500': vehicle.status === 'Maintenance'
-                        }" x-text="vehicle.status"></span>
-                    </p>
-                    <p><span class="text-gray-400">Last Maintained:</span> 
-                        <span x-text="vehicle.lastMaintained ? 
-                            new Date(vehicle.lastMaintained.seconds * 1000).toLocaleDateString() : 'Never'"></span>
-                    </p>
-                </div>
+<body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-200">
+        <!-- Sidebar -->
+        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
+            <div>
+                <a href="/dashboard.html" class="flex items-center space-x-3"><img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full"><span class="text-2xl font-bold">RentalFlow</span></a>
+                <nav class="space-y-2 mt-10">
+                    <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+                    <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
+                    <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
+                    <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                    <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
+                </nav>
+            </div>
+            <div class="mt-auto">
+                 <a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
             </div>
         </div>
-        
-        <!-- Maintenance History -->
-        <div class="bg-gray-800 rounded-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold">Maintenance History</h2>
-                <button @click="openMaintenanceModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded">
-                    + Add Maintenance
-                </button>
-            </div>
-            
-            <div class="overflow-x-auto">
-                <table class="min-w-full">
-                    <thead class="bg-gray-700">
-                        <tr>
-                            <th class="py-2 px-4 text-left">Date</th>
-                            <th class="py-2 px-4 text-left">Type</th>
-                            <th class="py-2 px-4 text-left">Description</th>
-                            <th class="py-2 px-4 text-left">Cost</th>
-                            <th class="py-2 px-4 text-left">Mileage</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="record in maintenance" :key="record.id">
-                            <tr class="border-b border-gray-700">
-                                <td class="py-2 px-4" x-text="new Date(record.date.seconds * 1000).toLocaleDateString()"></td>
-                                <td class="py-2 px-4" x-text="record.type"></td>
-                                <td class="py-2 px-4" x-text="record.description"></td>
-                                <td class="py-2 px-4" x-text="'AED ' + record.cost.toFixed(2)"></td>
-                                <td class="py-2 px-4" x-text="record.mileage + ' km'"></td>
-                            </tr>
-                        </template>
-                        <template x-if="maintenance.length === 0">
-                            <tr>
-                                <td colspan="5" class="py-4 px-4 text-center text-gray-500">No maintenance records found</td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="flex justify-between items-center p-6 bg-white border-b">
+                <div class="flex items-center">
+                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 id="vehicle-title" class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Vehicle Details</h1>
+                </div>
+                <div>
+                    <button id="log-maintenance-button" class="bg-orange-500 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition"><i class="fas fa-tools mr-2"></i>Log Maintenance</button>
+                    <a href="/fleet.html" class="text-blue-600 hover:underline ml-4"><i class="fas fa-arrow-left mr-2"></i>Back to Fleet</a>
+                </div>
+            </header>
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <div id="loader" class="text-center p-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-500"></i></div>
+                <div id="vehicle-content" class="hidden">
+                    <!-- Vehicle Header -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between">
+                            <div>
+                                <h2 id="vehicle-name" class="text-3xl font-bold text-gray-900"></h2>
+                                <p id="vehicle-plate" class="text-lg text-gray-500"></p>
+                            </div>
+                            <div id="vehicle-status" class="mt-4 md:mt-0 text-lg font-bold capitalize px-4 py-2 rounded-full text-center"></div>
+                        </div>
+                    </div>
+                    <!-- Main Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Vehicle Details</h3><div id="details-grid" class="grid grid-cols-2 gap-4 text-sm"></div></div>
+                            <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Images</h3><div id="images-gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"><p class="text-gray-500">No images uploaded.</p></div></div>
+                        </div>
+                        <div class="space-y-6">
+                             <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Booking History</h3><div id="booking-history" class="space-y-3"><p class="text-gray-500 text-sm">No bookings found.</p></div></div>
+                             <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Maintenance History</h3><div id="maintenance-history" class="space-y-3"><p class="text-gray-500 text-sm">No maintenance records.</p></div></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
-    
-    <!-- Maintenance Modal -->
-    <div x-show="isMaintenanceModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg w-full max-w-md p-6">
-            <h2 class="text-2xl font-bold mb-4">Add Maintenance Record</h2>
-            
-            <form @submit.prevent="addMaintenance">
-                <div class="mb-4">
-                    <label class="block mb-2">Maintenance Type</label>
-                    <select x-model="newMaintenance.type" class="w-full bg-gray-700 rounded p-2" required>
-                        <option value="Oil Change">Oil Change</option>
-                        <option value="Tire Rotation">Tire Rotation</option>
-                        <option value="Brake Service">Brake Service</option>
-                        <option value="Engine Check">Engine Check</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="block mb-2">Date</label>
-                    <input type="date" x-model="newMaintenance.date" class="w-full bg-gray-700 rounded p-2" required>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="block mb-2">Description</label>
-                    <textarea x-model="newMaintenance.description" class="w-full bg-gray-700 rounded p-2" required></textarea>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block mb-2">Cost (AED)</label>
-                        <input type="number" x-model="newMaintenance.cost" min="0" step="0.01"
-                               class="w-full bg-gray-700 rounded p-2" required>
-                    </div>
-                    <div>
-                        <label class="block mb-2">Mileage (km)</label>
-                        <input type="number" x-model="newMaintenance.mileage" min="0"
-                               class="w-full bg-gray-700 rounded p-2" required>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end space-x-3">
-                    <button type="button" @click="isMaintenanceModalOpen = false" 
-                            class="bg-gray-600 px-4 py-2 rounded">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-indigo-600 px-4 py-2 rounded">
-                        Save Record
-                    </button>
-                </div>
+
+    <!-- Log Maintenance Modal -->
+    <div id="maintenance-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-lg mx-auto rounded-lg shadow-lg z-50">
+            <div class="flex justify-between items-center p-4 border-b"><h3 class="text-xl font-semibold">Log Maintenance Event</h3><button id="close-maintenance-modal" class="text-gray-500 hover:text-gray-800">&times;</button></div>
+            <form id="maintenance-form" class="p-6 space-y-4">
+                <div><label for="maintenance-type" class="block text-sm">Type</label><select id="maintenance-type" class="mt-1 block w-full p-2 border rounded-md"><option>Oil Change</option><option>Tire Rotation</option><option>Brake Service</option><option>General Repair</option><option>Other</option></select></div>
+                <div><label for="maintenance-date" class="block text-sm">Date</label><input type="date" id="maintenance-date" class="mt-1 block w-full p-2 border rounded-md" required></div>
+                <div><label for="return-date" class="block text-sm">Expected Return Date</label><input type="date" id="return-date" class="mt-1 block w-full p-2 border rounded-md"></div>
+                <div><label for="maintenance-cost" class="block text-sm">Cost ($)</label><input type="number" step="0.01" id="maintenance-cost" class="mt-1 block w-full p-2 border rounded-md"></div>
+                <div><label for="maintenance-notes" class="block text-sm">Notes</label><textarea id="maintenance-notes" rows="3" class="mt-1 block w-full p-2 border rounded-md"></textarea></div>
+                <div class="flex justify-end pt-4"><button type="button" id="cancel-maintenance" class="bg-gray-200 px-4 py-2 rounded-lg mr-2">Cancel</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Save Event</button></div>
             </form>
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
     <script>
-        function vehicleController() {
-            return {
-                vehicleId: new URLSearchParams(window.location.search).get('id'),
-                vehicle: {},
-                maintenance: [],
-                isMaintenanceModalOpen: false,
-                newMaintenance: {
-                    type: 'Oil Change',
-                    date: new Date().toISOString().split('T')[0],
-                    description: '',
-                    cost: 0,
-                    mileage: 0
-                },
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const db = firebase.firestore();
+                if (!db) { console.error("DB not found"); return; }
+                const loader = document.getElementById('loader');
+                const vehicleContent = document.getElementById('vehicle-content');
+                const vehicleId = new URLSearchParams(window.location.search).get('id');
+                if (!vehicleId) { loader.innerHTML = '<p class="text-red-500 font-bold">Error: No vehicle ID provided.</p>'; return; }
+
+                const vehicleRef = db.collection('vehicles').doc(vehicleId);
+                const maintenanceRef = db.collection('maintenance');
+
+                // --- Maintenance Modal Logic ---
+                const maintenanceModal = document.getElementById('maintenance-modal');
+                const logMaintenanceButton = document.getElementById('log-maintenance-button');
+                logMaintenanceButton.addEventListener('click', () => maintenanceModal.classList.remove('hidden'));
+                document.getElementById('close-maintenance-modal').addEventListener('click', () => maintenanceModal.classList.add('hidden'));
+                document.getElementById('cancel-maintenance').addEventListener('click', () => maintenanceModal.classList.add('hidden'));
                 
-                async loadVehicle() {
-                    if (!this.vehicleId) return;
-                    
-                    try {
-                        const response = await fetch(`/api/fleet/${this.vehicleId}`);
-                        this.vehicle = await response.json();
-                        this.loadMaintenance();
-                    } catch (error) {
-                        console.error('Error loading vehicle:', error);
-                    }
-                },
-                
-                async loadMaintenance() {
-                    try {
-                        const response = await fetch(`/api/maintenance?vehicleId=${this.vehicleId}`);
-                        this.maintenance = await response.json();
-                    } catch (error) {
-                        console.error('Error loading maintenance:', error);
-                    }
-                },
-                
-                openMaintenanceModal() {
-                    this.newMaintenance = {
-                        vehicleId: this.vehicleId,
-                        type: 'Oil Change',
-                        date: new Date().toISOString().split('T')[0],
-                        description: '',
-                        cost: 0,
-                        mileage: this.vehicle.currentMileage || 0
+                document.getElementById('maintenance-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const data = {
+                        vehicleId: vehicleId,
+                        type: document.getElementById('maintenance-type').value,
+                        date: new Date(document.getElementById('maintenance-date').value),
+                        returnDate: document.getElementById('return-date').value ? new Date(document.getElementById('return-date').value) : null,
+                        cost: Number(document.getElementById('maintenance-cost').value) || 0,
+                        notes: document.getElementById('maintenance-notes').value,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
-                    this.isMaintenanceModalOpen = true;
-                },
-                
-                async addMaintenance() {
-                    try {
-                        const response = await fetch('/api/maintenance', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.newMaintenance)
-                        });
-                        
-                        if (response.ok) {
-                            this.isMaintenanceModalOpen = false;
-                            this.loadVehicle(); // Refresh vehicle data
+                    maintenanceRef.add(data).then(() => {
+                        vehicleRef.update({ status: 'maintenance' });
+                        if (data.cost > 0) {
+                            db.collection('transactions').add({
+                                description: `Maintenance for ${document.getElementById('vehicle-name').textContent}`,
+                                type: 'expense', amount: data.cost, category: 'Maintenance', date: data.date
+                            });
                         }
-                    } catch (error) {
-                        console.error('Error adding maintenance:', error);
+                        maintenanceModal.classList.add('hidden');
+                    }).catch(err => console.error("Error adding maintenance: ", err));
+                });
+
+                // --- Main Vehicle Data Listener ---
+                vehicleRef.onSnapshot(doc => {
+                    if (!doc.exists) { loader.innerHTML = '<p class="text-red-500 font-bold">Error: Vehicle not found.</p>'; return; }
+                    const vehicle = doc.data();
+                    document.getElementById('vehicle-title').textContent = `${vehicle.brand} ${vehicle.model}`;
+                    document.getElementById('vehicle-name').textContent = `${vehicle.brand} ${vehicle.model}`;
+                    document.getElementById('vehicle-plate').textContent = vehicle.plateNumber;
+                    const statusEl = document.getElementById('vehicle-status');
+                    statusEl.textContent = vehicle.status;
+                    statusEl.className = 'mt-4 md:mt-0 text-lg font-bold capitalize px-4 py-2 rounded-full text-center ';
+                    switch(vehicle.status) {
+                        case 'available': statusEl.classList.add('bg-green-100', 'text-green-800'); break;
+                        case 'rented': case 'booked': statusEl.classList.add('bg-yellow-100', 'text-yellow-800'); break;
+                        case 'maintenance': statusEl.classList.add('bg-red-100', 'text-red-800'); break;
+                        default: statusEl.classList.add('bg-gray-100', 'text-gray-800');
                     }
-                },
-                
-                goBack() {
-                    window.location.href = 'dashboard.html#fleet';
+                    const detailsGrid = document.getElementById('details-grid');
+                    detailsGrid.innerHTML = `<div><strong class="block text-gray-500">Year</strong><span class="font-semibold">${vehicle.year || 'N/A'}</span></div><div><strong class="block text-gray-500">Color</strong><span class="font-semibold">${vehicle.color || 'N/A'}</span></div><div><strong class="block text-gray-500">Kilometers</strong><span class="font-semibold">${(vehicle.currentKM || 0).toLocaleString()}</span></div><div class="col-span-2"><strong class="block text-gray-500">Specs</strong><p class="font-semibold">${vehicle.specs || 'N/A'}</p></div><div class="col-span-2"><strong class="block text-gray-500">Description</strong><p class="font-semibold">${vehicle.description || 'N/A'}</p></div>`;
+                    const imagesGallery = document.getElementById('images-gallery');
+                    if (vehicle.imageUrls && vehicle.imageUrls.length > 0) {
+                        imagesGallery.innerHTML = vehicle.imageUrls.map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-32 object-cover rounded-lg shadow-md hover:opacity-80 transition-opacity"></a>`).join('');
+                    } else {
+                        imagesGallery.innerHTML = '<p class="text-gray-500 col-span-full">No images uploaded.</p>';
+                    }
+                    loadBookingHistory(vehicleId);
+                    loadMaintenanceHistory(vehicleId);
+                    loader.style.display = 'none';
+                    vehicleContent.classList.remove('hidden');
+                }, error => {
+                    console.error("Error fetching vehicle details:", error);
+                    loader.innerHTML = '<p class="text-red-500 font-bold">Error loading vehicle data.</p>';
+                });
+
+                function loadBookingHistory(vId) {
+                    const historyContainer = document.getElementById('booking-history');
+                    db.collection('bookings').where('vehicleId', '==', vId).orderBy('startDate', 'desc').get().then(snapshot => {
+                        if (snapshot.empty) { historyContainer.innerHTML = '<p class="text-gray-500 text-sm">No bookings found.</p>'; return; }
+                        historyContainer.innerHTML = snapshot.docs.map(doc => {
+                            const b = doc.data();
+                            return `<div class="text-sm p-2 bg-gray-50 rounded-md"><p class="font-semibold">${b.customerName}</p><p class="text-gray-600">${new Date(b.startDate.seconds * 1000).toLocaleDateString()}</p></div>`;
+                        }).join('');
+                    });
                 }
-            };
-        }
+                function loadMaintenanceHistory(vId) {
+                     const historyContainer = document.getElementById('maintenance-history');
+                     maintenanceRef.where('vehicleId', '==', vId).orderBy('date', 'desc').onSnapshot(snapshot => {
+                        if (snapshot.empty) { historyContainer.innerHTML = '<p class="text-gray-500 text-sm">No maintenance records.</p>'; return; }
+                        historyContainer.innerHTML = snapshot.docs.map(doc => {
+                            const r = doc.data();
+                            return `<div class="text-sm p-2 bg-gray-50 rounded-md"><p class="font-semibold">${r.type || 'General'}</p><p class="text-gray-600">${new Date(r.date.seconds * 1000).toLocaleDateString()} - $${r.cost.toFixed(2)}</p><p class="text-xs text-gray-500">${r.notes || ''}</p></div>`;
+                        }).join('');
+                    });
+                }
+                document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+            }, 200);
+        });
     </script>
 </body>
 </html>
