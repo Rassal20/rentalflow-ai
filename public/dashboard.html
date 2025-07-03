@@ -18,13 +18,14 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
         
         body {
             display: flex;
             min-height: 100vh;
             background-color: #f0f2f5;
+            color: #333;
         }
         
         /* SIDEBAR */
@@ -102,7 +103,13 @@
             background: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
         
         .stat-card h3 {
@@ -121,12 +128,13 @@
             background: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
         
         .recent-activity h2 {
             margin-bottom: 20px;
             color: var(--dark);
+            font-weight: 600;
         }
         
         .activity-list {
@@ -135,7 +143,7 @@
         
         .activity-item {
             display: flex;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #eee;
         }
         
@@ -153,6 +161,7 @@
             justify-content: center;
             margin-right: 15px;
             color: var(--primary);
+            flex-shrink: 0;
         }
         
         .activity-content {
@@ -168,6 +177,29 @@
             color: #6c757d;
             font-size: 0.85rem;
         }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .logo h1, .sidebar-link span {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+            }
+            
+            .sidebar-link {
+                justify-content: center;
+            }
+            
+            .sidebar-link i {
+                margin-right: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -178,25 +210,25 @@
         </div>
         <div class="nav-links">
             <a href="dashboard.html" class="sidebar-link active">
-                <i class="fas fa-tachometer-alt"></i> Dashboard
+                <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
             </a>
             <a href="fleet.html" class="sidebar-link">
-                <i class="fas fa-car"></i> Fleet
+                <i class="fas fa-car"></i> <span>Fleet</span>
             </a>
             <a href="bookings.html" class="sidebar-link">
-                <i class="fas fa-calendar-check"></i> Bookings
+                <i class="fas fa-calendar-check"></i> <span>Bookings</span>
             </a>
             <a href="customers.html" class="sidebar-link">
-                <i class="fas fa-user-friends"></i> Customers
+                <i class="fas fa-user-friends"></i> <span>Customers</span>
             </a>
             <a href="accounting.html" class="sidebar-link">
-                <i class="fas fa-calculator"></i> Accounting
+                <i class="fas fa-calculator"></i> <span>Accounting</span>
             </a>
             <a href="invoices.html" class="sidebar-link">
-                <i class="fas fa-file-invoice-dollar"></i> Invoices
+                <i class="fas fa-file-invoice-dollar"></i> <span>Invoices</span>
             </a>
             <a href="settings.html" class="sidebar-link">
-                <i class="fas fa-cog"></i> Settings
+                <i class="fas fa-cog"></i> <span>Settings</span>
             </a>
         </div>
     </div>
@@ -206,94 +238,170 @@
         <header>
             <h1>Dashboard Overview</h1>
             <div class="user-profile">
-                <i class="fas fa-user-circle fa-2x"></i>
+                <i class="fas fa-user-circle fa-2x" style="color: #4361ee;"></i>
             </div>
         </header>
 
         <div class="stats-container">
             <div class="stat-card">
                 <h3>Total Vehicles</h3>
-                <div class="value" id="vehicle-count">24</div>
+                <div class="value" id="vehicle-count">0</div>
             </div>
             <div class="stat-card">
                 <h3>Active Bookings</h3>
-                <div class="value" id="booking-count">18</div>
+                <div class="value" id="booking-count">0</div>
             </div>
             <div class="stat-card">
                 <h3>Revenue Today</h3>
-                <div class="value" id="revenue">$2,850</div>
+                <div class="value" id="revenue">$0</div>
             </div>
             <div class="stat-card">
                 <h3>Maintenance Due</h3>
-                <div class="value" id="maintenance-count">3</div>
+                <div class="value" id="maintenance-count">0</div>
             </div>
         </div>
 
         <div class="recent-activity">
             <h2>Recent Activity</h2>
-            <ul class="activity-list">
-                <li class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-car"></i>
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-title">New vehicle added</div>
-                        <div class="activity-desc">Toyota Camry 2023</div>
-                        <div class="activity-time">10 minutes ago</div>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-calendar"></i>
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Booking confirmed</div>
-                        <div class="activity-desc">#BK-1024 - John Doe</div>
-                        <div class="activity-time">1 hour ago</div>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Maintenance completed</div>
-                        <div class="activity-desc">Ford F-150 (Oil change)</div>
-                        <div class="activity-time">3 hours ago</div>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-file-invoice"></i>
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-title">Invoice generated</div>
-                        <div class="activity-desc">#INV-2058 - $850.00</div>
-                        <div class="activity-time">5 hours ago</div>
-                    </div>
-                </li>
+            <ul class="activity-list" id="activity-list">
+                <!-- Dynamic content will be inserted here -->
             </ul>
         </div>
     </div>
 
     <script>
-        // Fetch dashboard stats (example implementation)
-        async function fetchDashboardStats() {
+        // DOM elements
+        const elements = {
+            vehicleCount: document.getElementById('vehicle-count'),
+            bookingCount: document.getElementById('booking-count'),
+            revenue: document.getElementById('revenue'),
+            maintenanceCount: document.getElementById('maintenance-count'),
+            activityList: document.getElementById('activity-list')
+        };
+
+        // Icons for activity types
+        const activityIcons = {
+            vehicle: 'fas fa-car',
+            booking: 'fas fa-calendar-check',
+            maintenance: 'fas fa-tools',
+            invoice: 'fas fa-file-invoice',
+            customer: 'fas fa-user-plus'
+        };
+
+        // Fetch data from API
+        async function fetchData(endpoint) {
             try {
-                const [vehicles, bookings] = await Promise.all([
-                    fetch('/api/fleet').then(res => res.json()),
-                    fetch('/api/bookings').then(res => res.json())
-                ]);
-                
-                document.getElementById('vehicle-count').textContent = vehicles.length;
-                document.getElementById('booking-count').textContent = bookings.length;
+                const response = await fetch(`/api/${endpoint}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
             } catch (error) {
-                console.error('Error fetching dashboard data:', error);
+                console.error(`Error fetching ${endpoint}:`, error);
+                return null;
             }
         }
-        
+
+        // Update dashboard stats
+        async function updateDashboardStats() {
+            const [vehicles, bookings] = await Promise.all([
+                fetchData('fleet'),
+                fetchData('bookings')
+            ]);
+            
+            if (vehicles) {
+                elements.vehicleCount.textContent = vehicles.length;
+                // Calculate maintenance due (example)
+                const maintenanceDue = vehicles.filter(v => 
+                    v.lastMaintained && 
+                    (new Date() - new Date(v.lastMaintained)) > 30 * 24 * 60 * 60 * 1000
+                ).length;
+                elements.maintenanceCount.textContent = maintenanceDue;
+            }
+            
+            if (bookings) {
+                const activeBookings = bookings.filter(b => 
+                    new Date(b.startDate) <= new Date() && 
+                    new Date(b.endDate) >= new Date()
+                );
+                elements.bookingCount.textContent = activeBookings.length;
+                
+                // Calculate today's revenue (example)
+                const todayRevenue = activeBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+                elements.revenue.textContent = `$${todayRevenue.toFixed(2)}`;
+            }
+        }
+
+        // Render recent activity
+        function renderRecentActivity(activities) {
+            if (!activities || activities.length === 0) {
+                elements.activityList.innerHTML = '<li class="activity-item">No recent activity</li>';
+                return;
+            }
+            
+            elements.activityList.innerHTML = activities
+                .slice(0, 5)
+                .map(activity => `
+                    <li class="activity-item">
+                        <div class="activity-icon">
+                            <i class="${activityIcons[activity.type] || 'fas fa-info-circle'}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">${activity.title}</div>
+                            <div class="activity-desc">${activity.description}</div>
+                            <div class="activity-time">${formatTime(activity.timestamp)}</div>
+                        </div>
+                    </li>
+                `)
+                .join('');
+        }
+
+        // Format timestamp
+        function formatTime(timestamp) {
+            if (!timestamp) return 'Just now';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return new Intl.DateTimeFormat('en-US', {
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            }).format(date);
+        }
+
         // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', fetchDashboardStats);
+        async function initDashboard() {
+            await updateDashboardStats();
+            
+            // Example recent activities
+            const recentActivities = [
+                {
+                    type: 'vehicle',
+                    title: 'New vehicle added',
+                    description: 'Toyota Camry 2023',
+                    timestamp: new Date(Date.now() - 10 * 60 * 1000)
+                },
+                {
+                    type: 'booking',
+                    title: 'Booking confirmed',
+                    description: '#BK-1024 - John Doe',
+                    timestamp: new Date(Date.now() - 60 * 60 * 1000)
+                },
+                {
+                    type: 'maintenance',
+                    title: 'Maintenance completed',
+                    description: 'Ford F-150 (Oil change)',
+                    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000)
+                },
+                {
+                    type: 'invoice',
+                    title: 'Invoice generated',
+                    description: '#INV-2058 - $850.00',
+                    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000)
+                }
+            ];
+            
+            renderRecentActivity(recentActivities);
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initDashboard);
     </script>
 </body>
 </html>
