@@ -170,8 +170,6 @@
                         if (customer.documents && Array.isArray(customer.documents)) {
                             displayExistingDocuments(customer.documents);
                         }
-                    } else {
-                        addDocumentRow(); 
                     }
                     customerModal.classList.remove('hidden');
                 };
@@ -196,7 +194,6 @@
                 });
 
                 addCustomerButton.addEventListener('click', () => openModal('add'));
-                document.getElementById('add-document-button').addEventListener('click', () => addDocumentRow());
                 document.getElementById('close-modal-button').addEventListener('click', closeModal);
                 document.getElementById('cancel-button').addEventListener('click', closeModal);
                 document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
