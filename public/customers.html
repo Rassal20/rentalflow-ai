@@ -75,21 +75,59 @@
         <div class="modal-content w-full max-w-2xl mx-auto rounded-lg shadow-lg z-50 max-h-screen overflow-y-auto">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 sticky top-0 bg-gray-800/80 backdrop-blur-sm"><h3 id="modal-title" class="text-xl font-bold text-white"></h3><button id="close-modal-button" class="text-gray-400 hover:text-white">&times;</button></div>
             <form id="customer-form" class="p-6 space-y-6">
-                 <!-- Form content is the same as before -->
+                <input type="hidden" id="customer-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div><label for="fullName" class="block text-sm text-gray-400">Full Name</label><input type="text" id="fullName" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
+                    <div><label for="email" class="block text-sm text-gray-400">Email Address</label><input type="email" id="email" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
+                    <div><label for="phone" class="block text-sm text-gray-400">Phone Number</label><input type="tel" id="phone" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="address" class="block text-sm text-gray-400">Address</label><input type="text" id="address" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="age" class="block text-sm text-gray-400">Age</label><input type="number" id="age" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="nationality" class="block text-sm text-gray-400">Nationality</label><input type="text" id="nationality" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                </div>
+                <div><label for="notes" class="block text-sm text-gray-400">Notes</label><textarea id="notes" rows="3" class="form-input mt-1 block w-full p-2 rounded-md"></textarea></div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400">Upload Customer Documents</label>
+                    <input type="file" id="document-upload" multiple class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-500/10 file:text-cyan-400 hover:file:bg-cyan-500/20"/>
+                    <div id="upload-progress-container" class="mt-2 space-y-1"></div>
+                </div>
+                <div id="existing-documents-container" class="space-y-2"></div>
+                <div class="flex justify-end pt-4"><button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-lg mr-2">Cancel</button><button type="submit" id="save-customer-button" class="btn-primary px-4 py-2 rounded-lg">Save Customer</button></div>
             </form>
         </div>
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const db = firebase.firestore();
-                if (!db) { return; }
+            // --- This is the fix. Initialize Firebase directly on this page. ---
+            const firebaseConfig = {
+                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
+                authDomain: "rentalflow-ai-app.firebaseapp.com",
+                projectId: "rentalflow-ai-app",
+                storageBucket: "rentalflow-ai-app.appspot.com",
+                messagingSenderId: "880755901556",
+                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
+            };
 
-                // *** NEW: Fetch and display company logo and name ***
+            let db, storage;
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                storage = firebase.storage();
+                console.log("Customers Page: Firebase connection successful.");
+                initializeApp(); // Run the main app logic
+            } catch (e) {
+                console.error("CRITICAL: Firebase initialization failed on Customers page.", e);
+                document.getElementById('customers-table-body').innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500"><strong>Error: Database connection failed.</strong><br>Please check the Firebase configuration.</td></tr>`;
+                return;
+            }
+            // --- End of the fix ---
+
+            function initializeApp() {
+                // --- Sidebar Branding ---
                 const companyProfileRef = db.collection('company_profile').doc('main');
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
@@ -105,10 +143,120 @@
                     }
                 });
 
-                // All other customer-related JS remains the same...
                 const customersRef = db.collection('customers');
-                // ... (rest of the customer page javascript)
-            }, 200);
+                const customersTableBody = document.getElementById('customers-table-body');
+                const addCustomerButton = document.getElementById('add-customer-button');
+                const customerModal = document.getElementById('customer-modal');
+                const customerForm = document.getElementById('customer-form');
+                const saveButton = document.getElementById('save-customer-button');
+                const documentsContainer = document.getElementById('documents-container');
+                let filesToUpload = [];
+
+                const openModal = (mode, customer = {}) => {
+                    customerForm.reset();
+                    filesToUpload = [];
+                    document.getElementById('upload-progress-container').innerHTML = '';
+                    document.getElementById('existing-documents-container').innerHTML = '';
+                    document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Customer' : 'Add New Customer';
+                    document.getElementById('customer-id').value = mode === 'edit' ? customer.id : '';
+                    if (mode === 'edit') {
+                        document.getElementById('fullName').value = customer.fullName || '';
+                        document.getElementById('email').value = customer.email || '';
+                        document.getElementById('phone').value = customer.phone || '';
+                        document.getElementById('address').value = customer.address || '';
+                        document.getElementById('age').value = customer.age || '';
+                        document.getElementById('nationality').value = customer.nationality || '';
+                        document.getElementById('notes').value = customer.notes || '';
+                        if (customer.documents && Array.isArray(customer.documents)) {
+                            displayExistingDocuments(customer.documents);
+                        }
+                    } else {
+                        addDocumentRow(); 
+                    }
+                    customerModal.classList.remove('hidden');
+                };
+                const closeModal = () => customerModal.classList.add('hidden');
+                
+                const displayExistingDocuments = (documents) => {
+                    const container = document.getElementById('existing-documents-container');
+                    container.innerHTML = '<label class="block text-sm font-medium text-gray-400">Existing Documents</label>';
+                    documents.forEach(doc => {
+                        const docEl = document.createElement('div');
+                        docEl.className = 'flex items-center justify-between bg-gray-800 p-2 rounded';
+                        docEl.innerHTML = `<a href="${doc.url}" target="_blank" class="text-cyan-400 hover:underline truncate">${doc.name}</a>`;
+                        container.appendChild(docEl);
+                    });
+                };
+
+                document.getElementById('document-upload').addEventListener('change', (e) => {
+                    filesToUpload = Array.from(e.target.files);
+                    const progressContainer = document.getElementById('upload-progress-container');
+                    progressContainer.innerHTML = '';
+                    filesToUpload.forEach(file => { progressContainer.innerHTML += `<p class="text-sm text-gray-400">${file.name}</p>`; });
+                });
+
+                addCustomerButton.addEventListener('click', () => openModal('add'));
+                document.getElementById('add-document-button').addEventListener('click', () => addDocumentRow());
+                document.getElementById('close-modal-button').addEventListener('click', closeModal);
+                document.getElementById('cancel-button').addEventListener('click', closeModal);
+                document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+
+                customerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    saveButton.disabled = true;
+                    saveButton.textContent = 'Saving...';
+                    const id = document.getElementById('customer-id').value;
+                    const data = {
+                        fullName: document.getElementById('fullName').value, email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value, address: document.getElementById('address').value,
+                        age: Number(document.getElementById('age').value) || null, nationality: document.getElementById('nationality').value,
+                        notes: document.getElementById('notes').value, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    try {
+                        let docRef;
+                        if (id) { docRef = customersRef.doc(id); await docRef.update(data); } 
+                        else { data.createdAt = firebase.firestore.FieldValue.serverTimestamp(); docRef = await customersRef.add(data); }
+                        if (filesToUpload.length > 0) {
+                            const uploadPromises = filesToUpload.map(file => {
+                                const filePath = `customer_documents/${docRef.id}/${file.name}`;
+                                return storage.ref(filePath).put(file).then(() => storage.ref(filePath).getDownloadURL());
+                            });
+                            const downloadUrls = await Promise.all(uploadPromises);
+                            const newDocs = downloadUrls.map((url, i) => ({ name: filesToUpload[i].name, url: url }));
+                            await docRef.update({ documents: firebase.firestore.FieldValue.arrayUnion(...newDocs) });
+                        }
+                        closeModal();
+                    } catch (error) {
+                        console.error("Error saving customer: ", error);
+                        alert("Failed to save customer. Check console for details.");
+                    } finally {
+                        saveButton.disabled = false;
+                        saveButton.textContent = 'Save Customer';
+                    }
+                });
+
+                customersRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                    if (snapshot.empty) {
+                        customersTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-8 text-gray-500">No customers found.</td></tr>`;
+                        return;
+                    }
+                    customersTableBody.innerHTML = snapshot.docs.map(doc => {
+                        const c = { id: doc.id, ...doc.data() };
+                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${c.fullName}</td><td class="p-4">${c.email}</td><td class="p-4">${c.phone}</td><td class="p-4 space-x-4"><button class="edit-btn text-cyan-400 hover:text-cyan-300" data-id="${c.id}"><i class="fas fa-edit"></i></button><button class="delete-btn text-red-500 hover:text-red-400" data-id="${c.id}"><i class="fas fa-trash"></i></button></td></tr>`;
+                    }).join('');
+                });
+                
+                customersTableBody.addEventListener('click', (e) => {
+                    const button = e.target.closest('button');
+                    if (!button) return;
+                    const id = button.dataset.id;
+                    if (button.classList.contains('delete-btn')) {
+                        if (confirm('Are you sure?')) { customersRef.doc(id).delete(); }
+                    } else if (button.classList.contains('edit-btn')) {
+                        customersRef.doc(id).get().then(doc => { if (doc.exists) openModal('edit', { id: doc.id, ...doc.data() }); });
+                    }
+                });
+            }
         });
     </script>
 </body>
