@@ -10,20 +10,22 @@ const firebaseConfig = {
   appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
 };
 
-// Initialize Firebase and make 'db' globally available for other scripts
+// Initialize Firebase and make 'db' and 'storage' globally available for other scripts
 let db; 
+let storage;
 try {
   // This check prevents an error if the script is loaded multiple times.
   if (!firebase.apps.length) {
     const app = firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    console.log("Firebase client-side SDK initialized successfully.");
+    storage = firebase.storage(); // Initialize Firebase Storage
+    console.log("Firebase client-side SDKs initialized successfully.");
   } else {
     const app = firebase.app(); // if already initialized, use that one
     db = firebase.firestore();
-    console.log("Firebase client-side SDK already initialized.");
+    storage = firebase.storage();
+    console.log("Firebase client-side SDKs already initialized.");
   }
 } catch (e) {
   console.error("CRITICAL: Error initializing Firebase on client-side:", e);
-  // This error will now be more visible in the browser's developer console.
 }

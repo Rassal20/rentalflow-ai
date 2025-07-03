@@ -13,14 +13,13 @@
     <div class="flex h-screen bg-gray-200">
         <!-- Sidebar -->
         <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 space-y-6 transform -translate-x-full md:relative md:translate-x-0 transition z-30">
-            <a href="/dashboard" class="flex items-center space-x-3"><img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full"><span class="text-2xl font-bold">RentalFlow</span></a>
+            <a href="/dashboard.html" class="flex items-center space-x-3"><img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full"><span class="text-2xl font-bold">RentalFlow</span></a>
             <nav class="space-y-2">
-                <a href="/dashboard" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
-                <a href="/bookings" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
-                <a href="/customers" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
-                <a href="/fleet" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
-                <a href="/accounting" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-invoice-dollar w-6"></i><span class="ml-3">Accounting</span></a>
-                <a href="/invoices" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
+                <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+                <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
+                <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
+                <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
             </nav>
         </div>
         <!-- Main Content -->
@@ -95,10 +94,14 @@
                         const financials = bookingData.financials;
                         const customerDoc = await db.collection('customers').doc(bookingData.customerId).get();
                         const customerData = customerDoc.exists ? customerDoc.data() : {};
+                        
+                        // We will get company details from a 'company_profile' collection
                         const companyDoc = await db.collection('company_profile').doc('main').get();
                         const companyData = companyDoc.exists ? companyDoc.data() : {};
+
                         const invoiceItems = [{ description: `Rental of ${bookingData.vehicleName} (${financials.rentalRate.days} days @ $${financials.rentalRate.rate.toFixed(2)}/day)`, total: financials.rentalRate.total }];
                         financials.additionalCharges.forEach(c => invoiceItems.push({ description: c.description, total: c.amount }));
+
                         const invoiceData = {
                             invoiceNumber: `INV-${Date.now()}`, bookingId: bookingId, issueDate: new Date(),
                             dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), status: 'unpaid',
@@ -108,6 +111,8 @@
                         };
                         const newInvoice = await invoicesRef.add(invoiceData);
                         await bookingsRef.doc(bookingId).update({ invoiced: true });
+                        
+                        // Create a corresponding entry in a 'transactions' collection for accounting
                         await db.collection('transactions').add({
                             description: `Invoice ${invoiceData.invoiceNumber} for ${invoiceData.customer.name}`, type: 'income', amount: invoiceData.total,
                             category: 'Rental Income', date: new Date(), invoiceId: newInvoice.id
@@ -121,7 +126,7 @@
                     if(snapshot.empty) { invoicesTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No invoices found.</td></tr>`; return; }
                     invoicesTableBody.innerHTML = snapshot.docs.map(doc => {
                         const inv = { id: doc.id, ...doc.data() };
-                        return `<tr class="border-b hover:bg-gray-50"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">$${inv.total.toFixed(2)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs rounded-full ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail?id=${inv.id}" target="_blank" class="text-blue-500"><i class="fas fa-eye"></i> View</a></td></tr>`;
+                        return `<tr class="border-b hover:bg-gray-50"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">$${inv.total.toFixed(2)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs rounded-full ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-blue-500"><i class="fas fa-eye"></i> View</a></td></tr>`;
                     }).join('');
                 });
             }, 200);
