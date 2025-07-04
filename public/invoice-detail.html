@@ -59,24 +59,16 @@
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
-                authDomain: "rentalflow-ai-app.firebaseapp.com",
-                projectId: "rentalflow-ai-app",
-                storageBucket: "rentalflow-ai-app.appspot.com",
-                messagingSenderId: "880755901556",
-                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
-            };
-            let db;
-            try {
-                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-                db = firebase.firestore();
+            setTimeout(() => {
+                if (typeof db === 'undefined') {
+                    document.getElementById('loader').innerHTML = `<p class="text-red-500 font-bold">Error: Application services failed to load.</p>`;
+                    return;
+                }
                 initializeApp();
-            } catch (e) {
-                document.getElementById('loader').innerHTML = `<p class="text-red-500 font-bold">Error: Database connection failed.</p>`;
-            }
+            }, 200);
 
             async function initializeApp() {
                 const loader = document.getElementById('loader');
@@ -101,12 +93,16 @@
                     loader.innerHTML = `<p class="text-red-500 font-bold">Error: ${error.message}</p>`;
                 }
             }
+            
+            function formatCurrency(amount, currencySymbol = 'Dhs') {
+                return `${currencySymbol} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
 
             function renderInvoice(invoice) {
                 const company = invoice.company || {};
                 const customer = invoice.customer || {};
                 const financials = invoice.financials || {};
-                const symbol = financials.currencySymbol || '$';
+                const symbol = financials.currencySymbol || 'Dhs';
 
                 // Create a combined list of items for the table
                 const allItems = [];
@@ -155,11 +151,12 @@
                     <div class="flex justify-end mb-8">
                         <table class="w-full max-w-sm text-[--text-secondary] print-text-gray">
                             <tbody>
-                                <tr><td class="py-1 pr-4">Total Before Tax</td><td class="py-1 text-right font-semibold text-white print-text-black">${symbol} ${(financials.totalBeforeTax || financials.subtotal).toFixed(2)}</td></tr>
-                                <tr><td class="py-1 pr-4">Discount</td><td class="py-1 text-right font-semibold text-white print-text-black">${symbol} ${(financials.discount || 0).toFixed(2)}</td></tr>
-                                <tr><td class="py-1 pr-4">VAT (${(financials.tax.rate * 100).toFixed(0)}%)</td><td class="py-1 text-right font-semibold text-white print-text-black">${symbol} ${financials.tax.amount.toFixed(2)}</td></tr>
-                                <tr class="font-bold text-lg text-white print-text-black border-t-2 border-[--border-color] print:border-gray-400"><td class="pt-2 pr-4">Balance After Tax</td><td class="pt-2 text-right">${symbol} ${financials.total.toFixed(2)}</td></tr>
-                                <tr class="font-bold text-lg text-cyan-400 print-text-black"><td class="pt-1 pr-4">Total (AED)</td><td class="pt-1 text-right">Dhs ${financials.totalAED.toFixed(2)}</td></tr>
+                                <tr><td class="py-1 pr-4">Subtotal</td><td class="py-1 text-right font-semibold text-white print-text-black">${formatCurrency(financials.subtotal, symbol)}</td></tr>
+                                <tr><td class="py-1 pr-4">Discount</td><td class="py-1 text-right font-semibold text-white print-text-black">${formatCurrency(financials.discount || 0, symbol)}</td></tr>
+                                <tr class="border-t border-dashed border-gray-600"><td class="py-1 pr-4 pt-2">Total Before Tax</td><td class="py-1 pt-2 text-right font-semibold text-white print-text-black">${formatCurrency(financials.totalBeforeTax, symbol)}</td></tr>
+                                <tr><td class="py-1 pr-4">VAT (${(financials.tax.rate * 100).toFixed(0)}%)</td><td class="py-1 text-right font-semibold text-white print-text-black">${formatCurrency(financials.tax.amount, symbol)}</td></tr>
+                                <tr class="font-bold text-lg text-white print-text-black border-t-2 border-[--border-color] print:border-gray-400"><td class="pt-2 pr-4">Balance After Tax</td><td class="pt-2 text-right">${formatCurrency(financials.total, symbol)}</td></tr>
+                                <tr class="font-bold text-lg text-cyan-400 print-text-black"><td class="pt-1 pr-4">Total (AED)</td><td class="pt-1 text-right">${formatCurrency(financials.totalAED)}</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -194,15 +191,24 @@
                 const items = [];
                 document.querySelectorAll('#invoice-items-body tr').forEach(row => {
                     const description = row.querySelector('[data-field="description"]').textContent;
-                    const total = parseFloat(row.querySelector('[data-field="amount"]').textContent);
-                    items.push({ description, total });
+                    const amount = parseFloat(row.querySelector('[data-field="amount"]').textContent);
+                    items.push({ description, amount });
                 });
                 const status = document.getElementById('status-select').value;
                 const paymentMethod = status === 'paid' ? document.getElementById('payment-method-select').value : null;
-                const updatedData = { items, status, paymentMethod };
+
+                // Here you would typically recalculate the totals on the server-side for security.
+                // For this client-side app, we'll just update the items and status.
+                const updatedData = { 
+                    'financials.categorizedCharges': items, // This assumes items map directly to categorizedCharges
+                    status, 
+                    paymentMethod 
+                };
+
                 try {
-                    await invoiceRef.update(updatedData);
-                    alert('Invoice updated successfully!');
+                    await db.collection('invoices').doc(invoiceId).update(updatedData);
+                    alert('Invoice updated successfully! The page will now reload to reflect changes.');
+                    window.location.reload();
                 } catch (error) {
                     console.error("Error updating invoice:", error);
                     alert('Failed to update invoice.');

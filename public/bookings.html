@@ -63,7 +63,7 @@
                 <div class="card p-6 rounded-lg">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Vehicle</th><th class="p-4 text-gray-400">Dates</th><th class="p-4 text-gray-400">Total (AED)</th><th class="p-4 text-gray-400">Status</th><th class="p-4 text-gray-400">Actions</th></tr></thead>
+                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Vehicle</th><th class="p-4 text-gray-400">Dates</th><th class="p-4 text-gray-400">Total</th><th class="p-4 text-gray-400">Status</th><th class="p-4 text-gray-400">Actions</th></tr></thead>
                             <tbody id="bookings-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Initializing...</td></tr></tbody>
                         </table>
                     </div>
@@ -88,24 +88,24 @@
                         <div><label for="currency" class="block text-sm text-gray-400">Currency</label><select id="currency" class="form-input mt-1 block w-full p-2 rounded-md"><option value="AED" data-symbol="Dhs">AED</option><option value="USD" data-symbol="$">USD</option><option value="EUR" data-symbol="€">EUR</option><option value="GBP" data-symbol="£">GBP</option><option value="SAR" data-symbol="SR">SAR</option><option value="USDT" data-symbol="₮">USDT</option></select></div>
                         <div><label for="rentalRate" class="block text-sm text-gray-400">Rate Per Day</label><input type="number" step="0.01" id="rentalRate" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
                         <div class="text-center"><p class="text-sm text-gray-400">Days</p><p id="days-display" class="font-bold text-lg text-white">0</p></div>
-                        <div><label class="block text-sm text-gray-400">Rental Total</label><p id="rental-total-display" class="mt-1 w-full p-2 bg-gray-900 rounded-md text-white">0.00</p></div>
+                        <div><label class="block text-sm text-gray-400">Rental Total</label><p id="rental-total-display" class="mt-1 w-full p-2 bg-gray-900 rounded-md text-white">Dhs 0.00</p></div>
                     </div>
                     <div><label class="block text-sm mb-2 text-gray-400">Charges & Fines</label><div id="charges-container" class="space-y-2"></div><button type="button" id="add-charge-button" class="mt-2 text-sm text-cyan-400 hover:text-cyan-300 font-semibold"><i class="fas fa-plus mr-1"></i> Add Item</button></div>
                 </div>
                 <div class="border-t border-gray-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-900/50 p-4 rounded-lg space-y-2">
                         <h4 class="font-semibold text-white">Summary</h4>
-                        <div class="flex justify-between text-sm text-gray-400"><span>Subtotal</span><span id="summary-subtotal">0.00</span></div>
+                        <div class="flex justify-between text-sm text-gray-400"><span>Subtotal</span><span id="summary-subtotal">Dhs 0.00</span></div>
                         <div class="flex justify-between text-sm text-gray-400">
                             <label for="discount">Discount</label>
                             <input type="number" step="0.01" id="discount" class="form-input w-24 p-1 rounded-md text-sm text-right" placeholder="0.00">
                         </div>
-                        <div class="flex justify-between text-sm text-gray-400 font-bold"><span>Total Before Tax</span><span id="summary-before-tax">0.00</span></div>
+                        <div class="flex justify-between text-sm text-gray-400 font-bold"><span>Total Before Tax</span><span id="summary-before-tax">Dhs 0.00</span></div>
                         <div class="flex justify-between items-center text-sm text-gray-400">
                             <div class="flex items-center gap-2"><label for="taxRate">VAT (%)</label><input type="number" id="taxRate" value="5" class="form-input w-16 p-1 rounded-md text-sm"></div>
-                            <span id="summary-tax">0.00</span>
+                            <span id="summary-tax">Dhs 0.00</span>
                         </div>
-                        <div class="flex justify-between font-bold text-xl border-t border-gray-700 pt-2 mt-2 text-white"><span>Total After Tax</span><span id="summary-total">0.00</span></div>
+                        <div class="flex justify-between font-bold text-xl border-t border-gray-700 pt-2 mt-2 text-white"><span>Total After Tax</span><span id="summary-total">Dhs 0.00</span></div>
                     </div>
                     <div><label for="status" class="block text-sm text-gray-400">Booking Status</label><select id="status" class="form-input mt-1 block w-full p-2 rounded-md" required><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="rented">Rented</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
                 </div>
@@ -115,25 +115,17 @@
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
-                authDomain: "rentalflow-ai-app.firebaseapp.com",
-                projectId: "rentalflow-ai-app",
-                storageBucket: "rentalflow-ai-app.appspot.com",
-                messagingSenderId: "880755901556",
-                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
-            };
-            let db;
-            try {
-                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-                db = firebase.firestore();
+            setTimeout(() => {
+                if (typeof db === 'undefined') {
+                    console.error("Bookings Page: Firebase not initialized.");
+                    document.getElementById('bookings-table-body').innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-500"><strong>Error: Application services failed to load.</strong></td></tr>`;
+                    return;
+                }
                 initializeApp();
-            } catch (e) {
-                document.getElementById('bookings-table-body').innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-500"><strong>Error: Database connection failed.</strong></td></tr>`;
-                return;
-            }
+            }, 200);
 
             async function initializeApp() {
                 const companyProfileRef = db.collection('company_profile').doc('main');
@@ -158,6 +150,10 @@
                 const bookingsTableBody = document.getElementById('bookings-table-body');
                 
                 const chargeCategories = ["Road Tolls (Salik/Darb)", "Fines", "Parking", "Fuel", "Extra Driver", "Child Seat", "Extra Kilometer"];
+
+                function formatCurrency(amount, symbol = 'Dhs') {
+                    return `${symbol} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
 
                 const openModal = async (mode, booking = {}) => {
                     bookingForm.reset();
@@ -195,23 +191,23 @@
                 
                 const updateCalculations = () => {
                     const currencySelect = document.getElementById('currency');
-                    const symbol = currencySelect.options[currencySelect.selectedIndex].dataset.symbol || '$';
+                    const symbol = currencySelect.options[currencySelect.selectedIndex].dataset.symbol || 'Dhs';
                     const days = parseInt(document.getElementById('days-display').textContent) || 0;
                     const rentalRate = parseFloat(document.getElementById('rentalRate').value) || 0;
                     const rentalTotal = days * rentalRate;
-                    document.getElementById('rental-total-display').textContent = `${symbol}${rentalTotal.toFixed(2)}`;
+                    document.getElementById('rental-total-display').textContent = formatCurrency(rentalTotal, symbol);
                     let chargesTotal = 0;
                     chargesContainer.querySelectorAll('.charge-amount').forEach(i => chargesTotal += parseFloat(i.value) || 0);
                     const subtotal = rentalTotal + chargesTotal;
-                    document.getElementById('summary-subtotal').textContent = `${symbol}${subtotal.toFixed(2)}`;
+                    document.getElementById('summary-subtotal').textContent = formatCurrency(subtotal, symbol);
                     const discount = parseFloat(document.getElementById('discount').value) || 0;
                     const totalBeforeTax = subtotal - discount;
-                    document.getElementById('summary-before-tax').textContent = `${symbol}${totalBeforeTax.toFixed(2)}`;
+                    document.getElementById('summary-before-tax').textContent = formatCurrency(totalBeforeTax, symbol);
                     const taxRate = (parseFloat(document.getElementById('taxRate').value) || 0) / 100;
                     const taxAmount = totalBeforeTax * taxRate;
-                    document.getElementById('summary-tax').textContent = `${symbol}${taxAmount.toFixed(2)}`;
+                    document.getElementById('summary-tax').textContent = formatCurrency(taxAmount, symbol);
                     const total = totalBeforeTax + taxAmount;
-                    document.getElementById('summary-total').textContent = `${symbol}${total.toFixed(2)}`;
+                    document.getElementById('summary-total').textContent = formatCurrency(total, symbol);
                 };
 
                 const populateDropdowns = async (editingVehicleId, editingCustomerId) => { /* ... same as before ... */ };

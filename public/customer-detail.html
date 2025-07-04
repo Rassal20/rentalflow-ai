@@ -32,6 +32,7 @@
 </head>
 <body class="text-gray-300">
     <div class="flex h-screen">
+        <!-- Sidebar -->
         <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
              <div class="flex-grow">
                 <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
@@ -50,6 +51,7 @@
             <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a></div>
         </div>
 
+        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="header flex justify-between items-center p-6">
                 <div class="flex items-center">
@@ -64,6 +66,7 @@
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
                 <div id="loader" class="text-center p-10"><i class="fas fa-spinner fa-spin text-4xl text-cyan-400"></i></div>
                 <div id="customer-content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Column: Customer Info -->
                     <div class="lg:col-span-1 space-y-6">
                         <div class="card p-6 rounded-lg">
                             <h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Profile</h3>
@@ -74,6 +77,7 @@
                             <div id="documents-list" class="space-y-2"><p class="text-gray-500 text-sm">No documents uploaded.</p></div>
                         </div>
                     </div>
+                    <!-- Right Column: Booking History -->
                     <div class="lg:col-span-2">
                         <div class="card p-6 rounded-lg">
                              <h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Booking History</h3>
@@ -90,6 +94,7 @@
         </div>
     </div>
 
+    <!-- Re-using the same modal from customers.html for editing -->
     <div id="customer-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 hidden">
         <div class="modal-content w-full max-w-3xl mx-auto rounded-lg shadow-lg z-50 max-h-screen overflow-y-auto">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 sticky top-0 bg-gray-800/80 backdrop-blur-sm"><h3 id="modal-title" class="text-xl font-bold text-white">Edit Customer</h3><button id="close-modal-button" class="text-gray-400 hover:text-white">&times;</button></div>
@@ -113,6 +118,7 @@
         </div>
     </div>
 
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
@@ -134,6 +140,7 @@
             }, 200);
 
             let currentCustomerData = {}; // Store customer data globally on this page
+            let countryData = []; // Store country data globally
 
             function initializeApp(customerId) {
                 const customerRef = db.collection('customers').doc(customerId);
@@ -219,34 +226,51 @@
                 const saveButton = document.getElementById('save-customer-button');
                 let filesToUpload = [];
 
-                // Populate Nationality and Phone Code dropdowns
-                fetch('https://restcountries.com/v3.1/all').then(res => res.json()).then(countries => {
-                    const sortedCountries = countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+                // --- FIX: Populate Nationality and Phone Code dropdowns ---
+                const nationalitySelect = document.getElementById('nationality');
+                const phoneCodeSelect = document.getElementById('phone-code');
+                const populateDropdowns = () => {
+                    if (countryData.length === 0) return;
                     let countryOptions = '<option value="">Select Nationality</option>';
                     let phoneOptions = '<option value="">Code</option>';
-                    sortedCountries.forEach(country => {
+                    countryData.forEach(country => {
                         const name = country.name.common;
                         countryOptions += `<option value="${name}">${country.flag || ''} ${name}</option>`;
-                        if (country.idd.root) {
-                            const code = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
-                            phoneOptions += `<option value="${code}">${country.flag || ''} ${code}</option>`;
+                         if (country.idd.root) {
+                            const suffixes = country.idd.suffixes || [''];
+                            suffixes.forEach(suffix => {
+                                const code = `${country.idd.root}${suffix}`;
+                                phoneOptions += `<option value="${code}">${country.flag || ''} ${code}</option>`;
+                            });
                         }
                     });
-                    document.getElementById('nationality').innerHTML = countryOptions;
-                    document.getElementById('phone-code').innerHTML = phoneOptions;
-                });
+                    nationalitySelect.innerHTML = countryOptions;
+                    phoneCodeSelect.innerHTML = phoneOptions;
+                };
+
+                fetch('https://restcountries.com/v3.1/all')
+                    .then(res => res.json())
+                    .then(countries => {
+                        countryData = countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+                        populateDropdowns();
+                    }).catch(err => console.error("Could not load country data", err));
                 
                 const openModal = () => {
                     customerForm.reset();
+                    populateDropdowns();
                     document.getElementById('customer-id').value = currentCustomerData.id;
                     document.getElementById('fullName').value = currentCustomerData.fullName || '';
                     document.getElementById('email').value = currentCustomerData.email || '';
                     document.getElementById('phone').value = currentCustomerData.phone || '';
-                    document.getElementById('phone-code').value = currentCustomerData.phoneCode || '';
                     document.getElementById('address').value = currentCustomerData.address || '';
                     document.getElementById('dob').value = currentCustomerData.dob || '';
-                    document.getElementById('nationality').value = currentCustomerData.nationality || '';
                     document.getElementById('notes').value = currentCustomerData.notes || '';
+                    
+                    setTimeout(() => {
+                        document.getElementById('phone-code').value = currentCustomerData.phoneCode || '';
+                        document.getElementById('nationality').value = currentCustomerData.nationality || '';
+                    }, 50);
+
                     customerModal.classList.remove('hidden');
                 };
                 const closeModal = () => customerModal.classList.add('hidden');

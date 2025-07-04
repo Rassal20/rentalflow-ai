@@ -29,7 +29,6 @@
         .sidebar { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
         .header { background-color: var(--bg-primary); border-bottom: 1px solid var(--border-color); }
         .card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
-        .accent-glow { box-shadow: 0 0 15px -2px var(--accent); }
     </style>
 </head>
 <body class="text-gray-300">
@@ -38,7 +37,6 @@
         <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
             <div class="flex-grow">
                 <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
-                    <!-- This image will now be updated dynamically -->
                     <img id="company-logo-sidebar" src="https://placehold.co/40x40/161B22/30363D?text=..." alt="Logo" class="w-10 h-10 rounded-lg object-cover">
                     <span id="company-name-sidebar" class="text-2xl font-bold font-rajdhani text-white">RentalFlow</span>
                 </a>
@@ -67,9 +65,9 @@
                 <!-- Financial Widgets -->
                 <h3 class="text-xl font-semibold text-gray-400 mb-4">This Month's Financials</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Income</p><p id="income-this-month" class="text-4xl font-bold text-white mt-1">$0.00</p></div><div class="bg-green-500/20 text-green-400 p-2 rounded-lg"><i class="fas fa-arrow-up"></i></div></div></div>
-                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Expense</p><p id="expense-this-month" class="text-4xl font-bold text-white mt-1">$0.00</p></div><div class="bg-red-500/20 text-red-400 p-2 rounded-lg"><i class="fas fa-arrow-down"></i></div></div></div>
-                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Profit / Loss</p><p id="profit-this-month" class="text-4xl font-bold text-white mt-1">$0.00</p></div><div class="bg-cyan-500/20 text-cyan-400 p-2 rounded-lg"><i class="fas fa-balance-scale"></i></div></div></div>
+                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Income</p><p id="income-this-month" class="text-4xl font-bold text-white mt-1">Dhs 0.00</p></div><div class="bg-green-500/20 text-green-400 p-2 rounded-lg"><i class="fas fa-arrow-up"></i></div></div></div>
+                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Expense</p><p id="expense-this-month" class="text-4xl font-bold text-white mt-1">Dhs 0.00</p></div><div class="bg-red-500/20 text-red-400 p-2 rounded-lg"><i class="fas fa-arrow-down"></i></div></div></div>
+                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Profit / Loss</p><p id="profit-this-month" class="text-4xl font-bold text-white mt-1">Dhs 0.00</p></div><div class="bg-cyan-500/20 text-cyan-400 p-2 rounded-lg"><i class="fas fa-balance-scale"></i></div></div></div>
                 </div>
 
                 <!-- Operational Widgets -->
@@ -89,10 +87,18 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
-                const db = firebase.firestore();
                 if (!db) { console.error("DB not found"); return; }
                 
-                // *** NEW: Fetch and display company logo and name ***
+                /**
+                 * Formats a number into a professional currency string.
+                 * @param {number} amount The number to format.
+                 * @returns {string} A formatted currency string (e.g., "Dhs 1,234.56").
+                 */
+                function formatCurrency(amount) {
+                    return `Dhs ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+
+                // Fetch and display company logo and name
                 const companyProfileRef = db.collection('company_profile').doc('main');
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
@@ -105,7 +111,6 @@
                         if (data.logoUrl) {
                             companyLogoEl.src = data.logoUrl;
                         } else {
-                            // Use a default text-based placeholder if no logo is set
                             const initial = (data.companyName || 'R').charAt(0);
                             companyLogoEl.src = `https://placehold.co/40x40/161B22/22D3EE?text=${initial}`;
                         }
@@ -125,10 +130,10 @@
                         if (t.type === 'expense') totalExpense += t.amount;
                     });
                     const profit = totalIncome - totalExpense;
-                    document.getElementById('income-this-month').textContent = `$${totalIncome.toFixed(2)}`;
-                    document.getElementById('expense-this-month').textContent = `$${totalExpense.toFixed(2)}`;
+                    document.getElementById('income-this-month').textContent = formatCurrency(totalIncome);
+                    document.getElementById('expense-this-month').textContent = formatCurrency(totalExpense);
                     const profitEl = document.getElementById('profit-this-month');
-                    profitEl.textContent = `$${profit.toFixed(2)}`;
+                    profitEl.textContent = formatCurrency(profit);
                     profitEl.classList.toggle('text-red-400', profit < 0);
                     profitEl.classList.toggle('text-green-400', profit >= 0);
                 });

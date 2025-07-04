@@ -92,23 +92,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
-                authDomain: "rentalflow-ai-app.firebaseapp.com",
-                projectId: "rentalflow-ai-app",
-                storageBucket: "rentalflow-ai-app.appspot.com",
-                messagingSenderId: "880755901556",
-                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
-            };
-            let db, storage;
-            try {
-                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-                db = firebase.firestore();
-                storage = firebase.storage();
+            setTimeout(() => {
+                if (typeof db === 'undefined' || typeof storage === 'undefined') {
+                    console.error("Settings Page: Firebase not initialized.");
+                    return;
+                }
                 initializeApp();
-            } catch (e) { console.error("CRITICAL: Firebase initialization failed.", e); }
+            }, 200);
 
             function initializeApp() {
                 const companyProfileRef = db.collection('company_profile').doc('main');
@@ -170,7 +163,7 @@
                     };
                     try {
                         if (logoFileToUpload) {
-                            const filePath = `company_logos/main_logo`;
+                            const filePath = `company_logos/main_logo_${Date.now()}`;
                             const fileRef = storage.ref(filePath);
                             await fileRef.put(logoFileToUpload);
                             dataToSave.logoUrl = await fileRef.getDownloadURL();

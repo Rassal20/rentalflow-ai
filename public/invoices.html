@@ -71,7 +71,7 @@
                 <div class="card p-6 rounded-lg">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Invoice #</th><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Date</th><th class="p-4 text-gray-400 text-right">Amount (AED)</th><th class="p-4 text-gray-400 text-center">Status</th><th class="p-4 text-gray-400 text-center">Actions</th></tr></thead>
+                            <thead><tr class="border-b border-gray-700"><th class="p-4 text-gray-400">Invoice #</th><th class="p-4 text-gray-400">Customer</th><th class="p-4 text-gray-400">Date</th><th class="p-4 text-gray-400 text-right">Amount</th><th class="p-4 text-gray-400 text-center">Status</th><th class="p-4 text-gray-400 text-center">Actions</th></tr></thead>
                             <tbody id="invoices-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Initializing...</td></tr></tbody>
                         </table>
                     </div>
@@ -92,22 +92,16 @@
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-             const firebaseConfig = {
-                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
-                authDomain: "rentalflow-ai-app.firebaseapp.com",
-                projectId: "rentalflow-ai-app",
-                storageBucket: "rentalflow-ai-app.appspot.com",
-                messagingSenderId: "880755901556",
-                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
-            };
-            let db;
-            try {
-                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-                db = firebase.firestore();
+             setTimeout(() => {
+                if (typeof db === 'undefined') {
+                    console.error("Invoices Page: Firebase not initialized.");
+                    return;
+                }
                 initializeApp();
-            } catch (e) { console.error("CRITICAL: Firebase initialization failed.", e); }
+            }, 200);
 
             function initializeApp() {
                 let currentInvoicesData = [];
@@ -128,6 +122,10 @@
                 const generateInvoiceButton = document.getElementById('generate-invoice-button');
                 const invoicesTableBody = document.getElementById('invoices-table-body');
                 
+                function formatCurrency(amount) {
+                    return `Dhs ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+
                 const openModal = () => { loadBookingsForInvoice(); invoiceModal.classList.remove('hidden'); };
                 const closeModal = () => invoiceModal.classList.add('hidden');
                 
@@ -136,12 +134,12 @@
                     const doc = new jsPDF();
                     doc.text("Invoices Report", 14, 16);
                     doc.autoTable({
-                        head: [['Invoice #', 'Customer', 'Date', 'Amount (AED)', 'Status']],
+                        head: [['Invoice #', 'Customer', 'Date', 'Amount', 'Status']],
                         body: currentInvoicesData.map(inv => [
                             inv.invoiceNumber,
                             inv.customer.name,
                             new Date(inv.issueDate.seconds * 1000).toLocaleDateString(),
-                            (inv.financials.totalAED || 0).toFixed(2),
+                            formatCurrency(inv.financials.totalAED || 0),
                             inv.status
                         ]),
                         startY: 20,
@@ -203,7 +201,7 @@
                         await bookingsRef.doc(bookingId).update({ invoiced: true });
                         await db.collection('transactions').add({
                             description: `Invoice ${invoiceData.invoiceNumber}`, type: 'income', amount: financials.totalAED,
-                            category: 'Rental Income', date: new Date(), invoiceId: newInvoice.id
+                            category: 'Rental Income', date: new Date(), invoiceId: newInvoice.id, customerId: bookingData.customerId, vehicleId: bookingData.vehicleId
                         });
                         closeModal();
                         alert('Invoice created successfully!');
@@ -216,7 +214,7 @@
                     invoicesTableBody.innerHTML = currentInvoicesData.map(inv => {
                         const totalAED = inv.financials ? inv.financials.totalAED : 0;
                         const statusClass = inv.status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400';
-                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">Dhs ${totalAED.toFixed(2)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-cyan-400 hover:text-cyan-300"><i class="fas fa-eye"></i> View</a></td></tr>`;
+                        return `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-4">${inv.invoiceNumber}</td><td class="p-4">${inv.customer.name}</td><td class="p-4">${new Date(inv.issueDate.seconds * 1000).toLocaleDateString()}</td><td class="p-4 text-right font-medium">${formatCurrency(totalAED)}</td><td class="p-4 text-center"><span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">${inv.status}</span></td><td class="p-4 text-center"><a href="/invoice-detail.html?id=${inv.id}" target="_blank" class="text-cyan-400 hover:text-cyan-300"><i class="fas fa-eye"></i> View</a></td></tr>`;
                     }).join('');
                 });
                 document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));

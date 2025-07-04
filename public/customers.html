@@ -33,6 +33,7 @@
 </head>
 <body class="text-gray-300">
     <div class="flex h-screen">
+        <!-- Sidebar -->
         <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
             <div class="flex-grow">
                 <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
@@ -50,6 +51,7 @@
             </div>
             <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a></div>
         </div>
+        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="header flex justify-between items-center p-6">
                 <div class="flex items-center">
@@ -70,6 +72,7 @@
             </main>
         </div>
     </div>
+    <!-- Add/Edit Customer Modal -->
     <div id="customer-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 hidden">
         <div class="modal-content w-full max-w-3xl mx-auto rounded-lg shadow-lg z-50 max-h-screen overflow-y-auto">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 sticky top-0 bg-gray-800/80 backdrop-blur-sm"><h3 id="modal-title" class="text-xl font-bold text-white"></h3><button id="close-modal-button" class="text-gray-400 hover:text-white">&times;</button></div>
@@ -95,9 +98,11 @@
         </div>
     </div>
 
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <!-- Central Firebase Initializer -->
     <script src="/js/firebase-init.js"></script>
 
     <script>
@@ -131,25 +136,41 @@
                 
                 let filesToUpload = [];
 
-                // Populate Nationality and Phone Code dropdowns
+                // --- FIX: Populate Nationality and Phone Code dropdowns ---
                 const nationalitySelect = document.getElementById('nationality');
                 const phoneCodeSelect = document.getElementById('phone-code');
-                fetch('https://restcountries.com/v3.1/all').then(res => res.json()).then(countries => {
-                    const sortedCountries = countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+                // Fetch country data only once and store it to avoid repeated API calls
+                let countryData = [];
+                const populateDropdowns = () => {
+                    if (countryData.length === 0) return; // Don't run if data isn't loaded
                     let countryOptions = '<option value="">Select Nationality</option>';
                     let phoneOptions = '<option value="">Code</option>';
-                    sortedCountries.forEach(country => {
+                    countryData.forEach(country => {
                         const flag = country.flag || '';
                         const name = country.name.common;
                         countryOptions += `<option value="${name}">${flag} ${name}</option>`;
                         if (country.idd.root) {
-                            const code = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
-                            phoneOptions += `<option value="${code}">${flag} ${code}</option>`;
+                            const suffixes = country.idd.suffixes || [''];
+                            suffixes.forEach(suffix => {
+                                const code = `${country.idd.root}${suffix}`;
+                                phoneOptions += `<option value="${code}">${flag} ${code}</option>`;
+                            });
                         }
                     });
                     nationalitySelect.innerHTML = countryOptions;
                     phoneCodeSelect.innerHTML = phoneOptions;
-                }).catch(err => console.error("Could not load country data", err));
+                };
+
+                fetch('https://restcountries.com/v3.1/all')
+                    .then(res => res.json())
+                    .then(countries => {
+                        countryData = countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+                        populateDropdowns(); // Populate them once data is loaded
+                    }).catch(err => {
+                        console.error("Could not load country data", err);
+                        nationalitySelect.innerHTML = '<option value="">Could not load</option>';
+                        phoneCodeSelect.innerHTML = '<option value="">N/A</option>';
+                    });
 
 
                 const openModal = (mode, customer = {}) => {
@@ -159,14 +180,20 @@
                     document.getElementById('existing-documents-container').innerHTML = '';
                     document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Customer' : 'Add New Customer';
                     document.getElementById('customer-id').value = mode === 'edit' ? customer.id : '';
+                    
+                    populateDropdowns(); // Ensure dropdowns are populated when modal opens
+
                     if (mode === 'edit') {
                         document.getElementById('fullName').value = customer.fullName || '';
                         document.getElementById('email').value = customer.email || '';
                         document.getElementById('phone').value = customer.phone || '';
-                        document.getElementById('phone-code').value = customer.phoneCode || '';
                         document.getElementById('address').value = customer.address || '';
                         document.getElementById('dob').value = customer.dob || '';
-                        document.getElementById('nationality').value = customer.nationality || '';
+                        // Set dropdown values after a short delay to ensure they are rendered
+                        setTimeout(() => {
+                           document.getElementById('phone-code').value = customer.phoneCode || '';
+                           document.getElementById('nationality').value = customer.nationality || '';
+                        }, 50);
                         document.getElementById('notes').value = customer.notes || '';
                         if (customer.documents && Array.isArray(customer.documents)) {
                             displayExistingDocuments(customer.documents);

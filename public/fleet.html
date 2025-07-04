@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Libraries for PDF and Excel Export -->
     <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.js"></script>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
@@ -36,6 +37,7 @@
 </head>
 <body class="text-gray-300">
     <div class="flex h-screen">
+        <!-- Sidebar -->
         <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
             <div class="flex-grow">
                 <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
@@ -53,6 +55,7 @@
             </div>
             <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a></div>
         </div>
+        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="header flex justify-between items-center p-6">
                 <div class="flex items-center">
@@ -77,6 +80,7 @@
             </main>
         </div>
     </div>
+    <!-- Add/Edit Vehicle Modal -->
     <div id="vehicle-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 hidden">
         <div class="modal-content w-full max-w-3xl mx-auto rounded-lg shadow-lg z-50 max-h-screen overflow-y-auto">
             <div class="flex justify-between items-center p-4 border-b border-gray-700 sticky top-0 bg-gray-800/80 backdrop-blur-sm"><h3 id="modal-title" class="text-xl font-bold text-white"></h3><button id="close-modal-button" class="text-gray-400 hover:text-white">&times;</button></div>
@@ -85,7 +89,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div><label for="brand" class="block text-sm text-gray-400">Brand</label><select id="brand" class="form-input mt-1 block w-full p-2 rounded-md" required><option value="">Select Brand</option></select></div>
                     <div><label for="model" class="block text-sm text-gray-400">Model</label><select id="model" class="form-input mt-1 block w-full p-2 rounded-md" required disabled><option value="">Select a Brand First</option></select></div>
-                    <div><label for="year" class="block text-sm text-gray-400">Year</label><input type="number" id="year" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="year" class="block text-sm text-gray-400">Year</label><input type="number" id="year" class="form-input mt-1 block w-full p-2 rounded-md" placeholder="e.g., 2024"></div>
                     <div><label for="plateNumber" class="block text-sm text-gray-400">Plate Number</label><input type="text" id="plateNumber" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
                     <div><label for="color" class="block text-sm text-gray-400">Color</label><input type="text" id="color" class="form-input mt-1 block w-full p-2 rounded-md"></div>
                     <div><label for="currentKM" class="block text-sm text-gray-400">Kilometers</label><input type="number" id="currentKM" class="form-input mt-1 block w-full p-2 rounded-md"></div>
@@ -124,32 +128,53 @@
                 let currentVehiclesData = [];
                 let filesToUpload = [];
 
-                // --- Market Data for Dropdowns ---
-                const marketFleetData = [
-                    { "model": "Lamborghini Urus", "category": "Super SUV" },
-                    { "model": "Rolls-Royce Cullinan", "category": "Ultra-Luxury SUV" },
-                    { "model": "Ferrari 296 GTB", "category": "Exotic Sports Car" },
-                    { "model": "Range Rover Vogue", "category": "Luxury SUV" },
-                    { "model": "Mercedes-Benz G-Class", "category": "Luxury SUV" },
-                    { "model": "Porsche 911", "category": "Sports Car" },
-                    { "model": "Bentley Continental GT", "category": "Grand Tourer" }
-                ];
-
-                const vehicleMakes = {};
-                marketFleetData.forEach(item => {
-                    const parts = item.model.split(" ");
-                    const brand = parts[0];
-                    const model = parts.slice(1).join(" ");
-                    if (!vehicleMakes[brand]) {
-                        vehicleMakes[brand] = [];
-                    }
-                    vehicleMakes[brand].push(model);
-                });
+                // --- FIX: Comprehensive Car Data for Dropdowns ---
+                const vehicleData = {
+                    "Acura": ["ILX", "MDX", "NSX", "RDX", "RLX", "TLX"],
+                    "Alfa Romeo": ["4C", "Giulia", "Stelvio"],
+                    "Audi": ["A3", "A4", "A5", "A6", "A7", "A8", "Q3", "Q5", "Q7", "Q8", "R8", "TT"],
+                    "Bentley": ["Bentayga", "Continental GT", "Flying Spur"],
+                    "BMW": ["2 Series", "3 Series", "4 Series", "5 Series", "7 Series", "8 Series", "i3", "i8", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "Z4"],
+                    "Buick": ["Enclave", "Encore", "Envision", "Regal"],
+                    "Cadillac": ["ATS", "CT4", "CT5", "CT6", "CTS", "Escalade", "XT4", "XT5", "XT6"],
+                    "Chevrolet": ["Blazer", "Bolt EV", "Camaro", "Corvette", "Equinox", "Impala", "Malibu", "Silverado", "Suburban", "Tahoe", "Traverse", "Trax"],
+                    "Chrysler": ["300", "Pacifica", "Voyager"],
+                    "Dodge": ["Challenger", "Charger", "Durango", "Grand Caravan", "Journey"],
+                    "Ferrari": ["488", "812 Superfast", "F8", "GTC4Lusso", "Portofino", "Roma", "SF90 Stradale"],
+                    "Fiat": ["124 Spider", "500", "500L", "500X"],
+                    "Ford": ["Bronco", "EcoSport", "Edge", "Escape", "Expedition", "Explorer", "F-150", "Mustang", "Ranger", "Transit"],
+                    "Genesis": ["G70", "G80", "G90", "GV80"],
+                    "GMC": ["Acadia", "Canyon", "Sierra", "Terrain", "Yukon"],
+                    "Honda": ["Accord", "Civic", "CR-V", "Fit", "HR-V", "Insight", "Odyssey", "Passport", "Pilot", "Ridgeline"],
+                    "Hyundai": ["Accent", "Elantra", "Ioniq", "Kona", "Nexo", "Palisade", "Santa Fe", "Sonata", "Tucson", "Veloster", "Venue"],
+                    "Infiniti": ["Q50", "Q60", "QX50", "QX60", "QX80"],
+                    "Jaguar": ["E-Pace", "F-Pace", "F-Type", "I-Pace", "XE", "XF", "XJ"],
+                    "Jeep": ["Cherokee", "Compass", "Gladiator", "Grand Cherokee", "Renegade", "Wrangler"],
+                    "Kia": ["Cadenza", "Forte", "K5", "Niro", "Optima", "Rio", "Seltos", "Sorento", "Soul", "Sportage", "Stinger", "Telluride"],
+                    "Lamborghini": ["Aventador", "Huracan", "Urus"],
+                    "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Range Rover", "Range Rover Evoque", "Range Rover Sport", "Range Rover Velar"],
+                    "Lexus": ["ES", "GS", "GX", "IS", "LC", "LS", "LX", "NX", "RC", "RX", "UX"],
+                    "Lincoln": ["Aviator", "Corsair", "Nautilus", "Navigator"],
+                    "Maserati": ["Ghibli", "Levante", "Quattroporte"],
+                    "Mazda": ["CX-3", "CX-30", "CX-5", "CX-9", "Mazda3", "Mazda6", "MX-5 Miata"],
+                    "McLaren": ["570S", "600LT", "720S", "GT"],
+                    "Mercedes-Benz": ["A-Class", "C-Class", "CLA", "CLS", "E-Class", "G-Class", "GLA", "GLB", "GLC", "GLE", "GLS", "S-Class", "SL", "SLC", "Sprinter"],
+                    "Mitsubishi": ["Eclipse Cross", "Mirage", "Outlander", "Outlander Sport"],
+                    "Nissan": ["370Z", "Altima", "Armada", "Frontier", "GT-R", "Kicks", "Leaf", "Maxima", "Murano", "Pathfinder", "Rogue", "Sentra", "Titan", "Versa"],
+                    "Porsche": ["718 Boxster", "718 Cayman", "911", "Cayenne", "Macan", "Panamera", "Taycan"],
+                    "Ram": ["1500", "2500", "3500"],
+                    "Rolls-Royce": ["Cullinan", "Dawn", "Ghost", "Phantom", "Wraith"],
+                    "Subaru": ["Ascent", "BRZ", "Crosstrek", "Forester", "Impreza", "Legacy", "Outback", "WRX"],
+                    "Tesla": ["Model 3", "Model S", "Model X", "Model Y"],
+                    "Toyota": ["4Runner", "Avalon", "C-HR", "Camry", "Corolla", "Highlander", "Land Cruiser", "Prius", "RAV4", "Sequoia", "Sienna", "Supra", "Tacoma", "Tundra", "Yaris"],
+                    "Volkswagen": ["Arteon", "Atlas", "Golf", "Jetta", "Passat", "Tiguan"],
+                    "Volvo": ["S60", "S90", "V60", "V90", "XC40", "XC60", "XC90"]
+                };
 
                 const brandSelect = document.getElementById('brand');
                 const modelSelect = document.getElementById('model');
 
-                Object.keys(vehicleMakes).sort().forEach(brand => {
+                Object.keys(vehicleData).sort().forEach(brand => {
                     const option = document.createElement('option');
                     option.value = brand;
                     option.textContent = brand;
@@ -159,8 +184,8 @@
                 brandSelect.addEventListener('change', () => {
                     modelSelect.innerHTML = '<option value="">Select Model</option>';
                     const selectedBrand = brandSelect.value;
-                    if (selectedBrand && vehicleMakes[selectedBrand]) {
-                        vehicleMakes[selectedBrand].forEach(model => {
+                    if (selectedBrand && vehicleData[selectedBrand]) {
+                        vehicleData[selectedBrand].forEach(model => {
                             const option = document.createElement('option');
                             option.value = model;
                             option.textContent = model;
@@ -186,9 +211,6 @@
                 const vehiclesTableBody = document.getElementById('vehicles-table-body');
                 
                 // --- Export Functions ---
-                const exportToPDF = () => { /* ... (export logic is unchanged) ... */ };
-                const exportToExcel = () => { /* ... (export logic is unchanged) ... */ };
-
                 document.getElementById('export-pdf').addEventListener('click', () => {
                      const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
@@ -244,7 +266,16 @@
                 };
                 const closeModal = () => vehicleModal.classList.add('hidden');
 
-                const displayExistingImages = (urls) => { /* ... (unchanged) ... */ };
+                const displayExistingImages = (urls) => {
+                    const container = document.getElementById('existing-images-container');
+                    container.innerHTML = '';
+                    urls.forEach(url => {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.className = 'w-full h-20 object-cover rounded-md';
+                        container.appendChild(img);
+                    });
+                };
                 document.getElementById('image-upload').addEventListener('change', (e) => { filesToUpload = Array.from(e.target.files); });
 
                 document.getElementById('add-vehicle-button').addEventListener('click', () => openModal('add'));
@@ -278,7 +309,7 @@
                             data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                             docRef = await vehiclesRef.add(data);
                         }
-                        // Handle file uploads (unchanged logic)
+                        // Handle file uploads
                         if (filesToUpload.length > 0) {
                             const uploadPromises = filesToUpload.map(file => {
                                 const filePath = `vehicle_images/${docRef.id}/${Date.now()}_${file.name}`;
