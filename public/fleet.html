@@ -129,15 +129,6 @@
             }, 200);
 
             function initializeApp() {
-                // *** NEW: Check for and handle FAB-triggered modal opening ***
-                const action = sessionStorage.getItem('openModal');
-                if (action === 'vehicle') {
-                    setTimeout(() => {
-                        document.getElementById('add-vehicle-button')?.click();
-                    }, 100);
-                    sessionStorage.removeItem('openModal');
-                }
-
                 let currentVehiclesData = [];
                 let filesToUpload = [];
 
@@ -245,7 +236,6 @@
                 };
                 document.getElementById('image-upload').addEventListener('change', (e) => { filesToUpload = Array.from(e.target.files); });
 
-                document.getElementById('add-vehicle-button').addEventListener('click', () => openModal('add'));
                 document.getElementById('close-modal-button').addEventListener('click', closeModal);
                 document.getElementById('cancel-button').addEventListener('click', closeModal);
 
@@ -321,6 +311,17 @@
                 });
                 
                 document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+                
+                // *** CORRECTED LOGIC ***
+                document.getElementById('add-vehicle-button').addEventListener('click', () => openModal('add'));
+
+                const action = sessionStorage.getItem('openModal');
+                if (action === 'vehicle') {
+                    setTimeout(() => {
+                        document.getElementById('add-vehicle-button')?.click();
+                    }, 100);
+                    sessionStorage.removeItem('openModal');
+                }
             }
         });
     </script>

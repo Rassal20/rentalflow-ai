@@ -117,7 +117,108 @@
             }, 200);
 
             function initializeApp() {
-                // *** NEW: Check for and handle FAB-triggered modal opening ***
+                let currentTransactionsData = [];
+                const transactionsTableBody = document.getElementById('transactions-table-body');
+                const companyProfileRef = db.collection('company_profile').doc('main');
+                const transactionsRef = db.collection('transactions');
+
+                companyProfileRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
+                        if (data.logoUrl) document.getElementById('company-logo-sidebar').src = data.logoUrl;
+                    }
+                });
+
+                const transactionModal = document.getElementById('transaction-modal');
+                const transactionForm = document.getElementById('transaction-form');
+                const openModal = (mode, transaction = {}) => {
+                    transactionForm.reset();
+                    document.getElementById('date').valueAsDate = new Date();
+                    document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Transaction' : 'Add New Transaction';
+                    document.getElementById('transaction-id').value = mode === 'edit' ? transaction.id : '';
+                    if (mode === 'edit') {
+                        document.getElementById('description').value = transaction.description;
+                        document.getElementById('type').value = transaction.type;
+                        document.getElementById('amount').value = transaction.amount;
+                        document.getElementById('category').value = transaction.category;
+                        document.getElementById('date').value = new Date(transaction.date.seconds * 1000).toISOString().split('T')[0];
+                    }
+                    transactionModal.classList.remove('hidden');
+                };
+                const closeModal = () => transactionModal.classList.add('hidden');
+                
+                document.getElementById('close-modal-button').addEventListener('click', closeModal);
+                document.getElementById('cancel-button').addEventListener('click', closeModal);
+                document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+
+                transactionForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const id = document.getElementById('transaction-id').value;
+                    const transactionData = {
+                        description: document.getElementById('description').value,
+                        type: document.getElementById('type').value,
+                        amount: Number(document.getElementById('amount').value),
+                        category: document.getElementById('category').value,
+                        date: new Date(document.getElementById('date').value),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    if (id) transactionsRef.doc(id).update(transactionData).then(closeModal);
+                    else {
+                        transactionData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                        transactionsRef.add(transactionData).then(closeModal);
+                    }
+                });
+
+                transactionsRef.orderBy('date', 'desc').onSnapshot(snapshot => {
+                    let totalRevenue = 0, totalExpenses = 0;
+                    currentTransactionsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    if (snapshot.empty) {
+                        transactionsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-gray-500">No transactions found.</td></tr>`;
+                    } else {
+                        transactionsTableBody.innerHTML = currentTransactionsData.map(t => {
+                            const isIncome = t.type === 'income';
+                            if(isIncome) totalRevenue += t.amount; else totalExpenses += t.amount;
+                            return `
+                                <tr class="border-b border-gray-700 hover:bg-gray-800">
+                                    <td class="p-4">${new Date(t.date.seconds * 1000).toLocaleDateString()}</td>
+                                    <td class="p-4 font-medium">${t.description}</td>
+                                    <td class="p-4">${t.category}</td>
+                                    <td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${isIncome ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${t.type}</span></td>
+                                    <td class="p-4 text-right font-medium ${isIncome ? 'text-green-400' : 'text-red-400'}">${isIncome ? '+' : '-'}${t.amount.toFixed(2)}</td>
+                                    <td class="p-4 text-center space-x-4"><button class="edit-btn text-cyan-400 hover:text-cyan-300" data-id="${t.id}"><i class="fas fa-edit"></i></button><button class="delete-btn text-red-500 hover:text-red-400" data-id="${t.id}"><i class="fas fa-trash"></i></button></td>
+                                </tr>`;
+                        }).join('');
+                    }
+                    const netProfit = totalRevenue - totalExpenses;
+                    document.getElementById('total-revenue').textContent = `Dhs ${totalRevenue.toFixed(2)}`;
+                    document.getElementById('total-expenses').textContent = `Dhs ${totalExpenses.toFixed(2)}`;
+                    const profitEl = document.getElementById('net-profit');
+                    profitEl.textContent = `Dhs ${netProfit.toFixed(2)}`;
+                    profitEl.classList.toggle('text-red-400', netProfit < 0);
+                    profitEl.classList.toggle('text-green-400', netProfit >= 0);
+                }, error => console.error("Error fetching transactions: ", error));
+
+                transactionsTableBody.addEventListener('click', (e) => {
+                    const target = e.target.closest('button');
+                    if (!target) return;
+                    const id = target.dataset.id;
+                    if (target.classList.contains('delete-btn')) {
+                        if (confirm('Are you sure?')) transactionsRef.doc(id).delete();
+                    }
+                    if (target.classList.contains('edit-btn')) {
+                        const transactionData = currentTransactionsData.find(t => t.id === id);
+                        if(transactionData) openModal('edit', transactionData);
+                    }
+                });
+
+                document.getElementById('export-pdf').addEventListener('click', () => { /* ... */ });
+                document.getElementById('export-excel').addEventListener('click', () => { /* ... */ });
+
+                // *** CORRECTED LOGIC ***
+                document.getElementById('add-transaction-button').addEventListener('click', () => openModal('add'));
+
                 const action = sessionStorage.getItem('openModal');
                 if (action === 'transaction') {
                     setTimeout(() => {
@@ -125,9 +226,6 @@
                     }, 100);
                     sessionStorage.removeItem('openModal');
                 }
-
-                // The rest of the original script for accounting.html follows...
-                // ... (Omitted for brevity)
             }
         });
     </script>

@@ -122,16 +122,6 @@
             }, 200);
 
             function initializeApp() {
-                // *** NEW: Check for and handle FAB-triggered modal opening ***
-                const action = sessionStorage.getItem('openModal');
-                if (action === 'customer') {
-                    // Use a short timeout to ensure the modal's open function is ready
-                    setTimeout(() => {
-                        document.getElementById('add-customer-button')?.click();
-                    }, 100);
-                    sessionStorage.removeItem('openModal'); // Clean up the flag
-                }
-
                 const companyProfileRef = db.collection('company_profile').doc('main');
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
@@ -196,8 +186,6 @@
 
                 const closeModal = () => customerModal.classList.add('hidden');
                 
-                document.getElementById('add-customer-button').addEventListener('click', () => openModal('add'));
-
                 const displayExistingDocuments = (documents) => {
                     const container = document.getElementById('existing-documents-container');
                     container.innerHTML = '<label class="block text-sm font-medium text-gray-400 mb-2">Existing Documents</label>';
@@ -289,6 +277,19 @@
                         window.location.href = button.href;
                     }
                 });
+
+                // *** CORRECTED LOGIC ***
+                // Attach the click listener for the modal FIRST.
+                document.getElementById('add-customer-button').addEventListener('click', () => openModal('add'));
+
+                // THEN, check if the FAB requested the modal to open.
+                const action = sessionStorage.getItem('openModal');
+                if (action === 'customer') {
+                    setTimeout(() => {
+                        document.getElementById('add-customer-button')?.click();
+                    }, 100);
+                    sessionStorage.removeItem('openModal'); // Clean up the flag
+                }
             }
         });
     </script>
