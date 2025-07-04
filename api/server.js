@@ -1,8 +1,9 @@
 const express = require('express');
 const admin = require('firebase-admin');
-const path =require('path');
-const { PDFDocument, rgb } = require('pdf-lib');
+const path = require('path');
 const cors = require('cors');
+const fetch = require('node-fetch');
+const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 
 const app = express();
@@ -10,18 +11,16 @@ const app = express();
 // --- Firebase Admin Initialization ---
 let db;
 try {
-  if (admin.apps.length === 0) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log("Firebase Admin SDK initialized successfully.");
-  } else {
-    console.log("Firebase Admin SDK already initialized.");
-  }
-  db = admin.firestore();
+    if (admin.apps.length === 0) {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log("Firebase Admin SDK initialized successfully.");
+    }
+    db = admin.firestore();
 } catch (error) {
-  console.error("CRITICAL: Firebase Admin initialization failed.", error.message);
+    console.error("CRITICAL: Firebase Admin initialization failed.", error.message);
 }
 
 // --- Middleware ---
@@ -30,74 +29,110 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 
-// --- API Endpoints (from your original file) ---
+// =================================================================
+// --- REUSABLE AI & DATA LOGIC ---
+// =================================================================
 
-// Database helper
-const getCollection = async (collectionName) => {
-  if (!db) throw new Error("Database not initialized");
-  const snapshot = await db.collection(collectionName).get();
-  return snapshot.empty ? [] : snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
+/**
+ * Fetches live data from Firestore and gets an intelligent response from the AI.
+ * @param {string} userMessage - The message from the user.
+ * @returns {Promise<string>} The AI-generated reply.
+ */
+async function getAiReplyForCustomer(userMessage) {
+    const GOOGLE_AI_API_KEY = process.env.AI_API_KEY;
+    if (!db) throw new Error("Database service is unavailable.");
+    if (!GOOGLE_AI_API_KEY) throw new Error("AI API Key is not configured.");
 
-// COMPANY PROFILE, FLEET, BOOKINGS, CUSTOMERS, etc.
-// (Keeping all your existing API endpoints as they are correct)
+    // 1. Fetch live data from Firestore
+    const vehiclesSnapshot = await db.collection('vehicles').get();
+    const allVehicles = vehiclesSnapshot.docs.map(doc => doc.data());
+    const availableVehicles = allVehicles
+        .filter(v => v.status === 'available')
+        .map(v => `${v.year} ${v.brand} ${v.model}`);
 
-app.get('/api/invoices/:id/pdf', async (req, res) => {
-  if (!db) return res.status(500).json({ error: 'Database service is unavailable.' });
-  try {
-    const invoiceId = req.params.id;
-    const invoiceDoc = await db.collection('invoices').doc(invoiceId).get();
-    if (!invoiceDoc.exists) return res.status(404).send('Invoice not found');
-    
-    const invoice = invoiceDoc.data();
-    // Use the new detailed structure
-    const customerName = invoice.customer ? invoice.customer.name : 'N/A';
-    
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([600, 800]);
-    const { width, height } = page.getSize();
-    const fontSize = 12;
-    
-    page.drawText(`INVOICE #${invoice.invoiceNumber || invoiceId}`, { x: 50, y: height - 50, size: 18 });
-    page.drawText(`Date: ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}`, { x: 50, y: height - 80, size: fontSize });
-    page.drawText(`Due Date: ${new Date(invoice.dueDate.seconds * 1000).toLocaleDateString()}`, { x: 50, y: height - 100, size: fontSize });
-    page.drawText(`Customer: ${customerName}`, { x: 50, y: height - 130, size: fontSize });
-    
-    let y = height - 180;
-    page.drawText('Description', { x: 50, y, size: fontSize });
-    page.drawText('Amount (AED)', { x: 400, y, size: fontSize });
-    y -= 30;
-    
-    invoice.items.forEach(item => {
-      page.drawText(item.description, { x: 50, y, size: fontSize });
-      page.drawText(item.total.toFixed(2), { x: 400, y, size: fontSize });
-      y -= 20;
+    const companyProfile = (await db.collection('company_profile').doc('main').get()).data();
+    const companyName = companyProfile.companyName || "Prestige Rentals";
+
+    // 2. Construct a detailed, data-rich prompt for the AI
+    const dataContext = `
+        Current Date: ${new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Dubai' })}.
+        Company Name: ${companyName}.
+        Number of cars in fleet: ${allVehicles.length}.
+        List of currently available cars for rent: ${JSON.stringify(availableVehicles)}.
+    `;
+
+    const systemPrompt = `You are "Alex", a friendly and professional customer service agent for "${companyName}", a luxury car rental company in Dubai.
+        Your goal is to help customers, answer their questions about available cars, and encourage them to book.
+        NEVER mention internal data like booking details, customer names, or financials.
+        You MUST use the live data provided below to answer questions accurately. Be conversational and helpful.`;
+
+    const fullPrompt = `${systemPrompt}\n\n--- LIVE DATA CONTEXT ---\n${dataContext}\n\n--- CUSTOMER QUESTION ---\n${userMessage}`;
+
+    // 3. Call the Google AI API
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_AI_API_KEY}`;
+    const requestBody = {
+        contents: [{
+            parts: [{ text: fullPrompt }]
+        }]
+    };
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
     });
-    
-    y -= 20;
-    page.drawText('Subtotal:', { x: 350, y, size: fontSize });
-    page.drawText(invoice.subtotal.toFixed(2), { x: 400, y, size: fontSize });
-    y -= 20;
-    page.drawText('Tax:', { x: 350, y, size: fontSize });
-    page.drawText(invoice.taxAmount.toFixed(2), { x: 400, y, size: fontSize });
-    y -= 20;
-    page.drawText('Total:', { x: 350, y, size: 14, color: rgb(0, 0, 0) });
-    page.drawText(invoice.total.toFixed(2), { x: 400, y, size: 14, color: rgb(0, 0, 0) });
-    
-    const pdfBytes = await pdfDoc.save();
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`);
-    res.send(Buffer.from(pdfBytes));
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    res.status(500).json({ error: 'Failed to generate PDF' });
-  }
-});
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Google AI API error: ${response.statusText} - ${errorBody}`);
+    }
+
+    const responseData = await response.json();
+    if (!responseData.candidates || responseData.candidates.length === 0) {
+        return "I'm sorry, I couldn't come up with a response. Could you try rephrasing your question?";
+    }
+    return responseData.candidates[0].content.parts[0].text;
+}
 
 
-// --- Frontend HTML Page Serving (The Fix) ---
-// This section correctly serves your different HTML pages.
+// =================================================================
+// --- TELEGRAM BOT LOGIC ---
+// =================================================================
+
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+if (TELEGRAM_TOKEN) {
+    const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
+    console.log("Telegram Bot is running and listening for messages...");
+
+    bot.on('message', async (msg) => {
+        const chatId = msg.chat.id;
+        const userMessage = msg.text;
+
+        if (!userMessage) return;
+
+        try {
+            await bot.sendChatAction(chatId, 'typing');
+            const aiReply = await getAiReplyForCustomer(userMessage);
+            bot.sendMessage(chatId, aiReply);
+        } catch (error) {
+            console.error('Telegram Bot Error:', error);
+            bot.sendMessage(chatId, "I'm sorry, I'm having trouble connecting to my brain right now. Please try again in a moment.");
+        }
+    });
+
+    bot.on("polling_error", (error) => {
+        console.error("Telegram Polling Error:", error.code, "-", error.message);
+    });
+
+} else {
+    console.warn("TELEGRAM_BOT_TOKEN not found. Telegram bot will not be started.");
+}
+
+
+// =================================================================
+// --- HTML PAGE SERVING & SERVER START ---
+// =================================================================
+
 const pages = [
   '/', '/dashboard', '/fleet', '/bookings', 
   '/customers', '/accounting', '/invoices',
@@ -106,19 +141,15 @@ const pages = [
 
 pages.forEach(page => {
   app.get(page, (req, res) => {
-    // Determine the filename. If the route is '/', serve 'dashboard.html'.
-    // Otherwise, construct the filename from the route (e.g., '/bookings' -> 'bookings.html').
-    const fileName = (page === '/' ? 'dashboard' : page.substring(1)) + '.html';
+    const fileName = (page === '/' || page === '/index') ? 'dashboard.html' : page.substring(1) + '.html';
     res.sendFile(path.join(__dirname, `../public/${fileName}`), (err) => {
         if (err) {
-            res.status(404).send("Sorry, that page doesn't exist!");
+            res.status(404).sendFile(path.join(__dirname, '../public/dashboard.html'));
         }
     });
   });
 });
 
-
-// --- Start Server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
