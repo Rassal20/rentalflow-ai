@@ -58,7 +58,7 @@
                     <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
                     <h1 class="text-2xl font-bold text-white ml-4 md:ml-0">Manage Customers</h1>
                 </div>
-                <button id="add-customer-button" class="btn-primary flex items-center px-4 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-plus mr-2"></i> Add Customer</button>
+                <div id="header-actions"></div>
             </header>
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
                 <div class="card p-6 rounded-lg">
@@ -98,23 +98,24 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    <!-- Central Firebase Initializer -->
     <script src="/js/firebase-init.js"></script>
+    <script src="/js/data.js"></script> <!-- Load the local data file -->
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Wait for firebase-init.js to load and define 'db'
             setTimeout(() => {
                 if (typeof db === 'undefined' || typeof storage === 'undefined') {
                     console.error("Customers Page: Firebase has not been initialized correctly.");
-                    document.getElementById('customers-table-body').innerHTML = `<tr><td colspan="4" class="text-center p-8 text-red-500"><strong>Error: Application services failed to load.</strong></td></tr>`;
                     return;
                 }
-                initializeApp(); // Run the main app logic
+                if (typeof countryData === 'undefined') {
+                    console.error("Customers Page: Local data script (data.js) not loaded.");
+                    return;
+                }
+                initializeApp();
             }, 200);
 
             function initializeApp() {
@@ -129,49 +130,26 @@
 
                 const customersRef = db.collection('customers');
                 const customersTableBody = document.getElementById('customers-table-body');
-                const addCustomerButton = document.getElementById('add-customer-button');
                 const customerModal = document.getElementById('customer-modal');
                 const customerForm = document.getElementById('customer-form');
                 const saveButton = document.getElementById('save-customer-button');
                 
                 let filesToUpload = [];
 
-                // --- FIX: Populate Nationality and Phone Code dropdowns ---
                 const nationalitySelect = document.getElementById('nationality');
                 const phoneCodeSelect = document.getElementById('phone-code');
-                // Fetch country data only once and store it to avoid repeated API calls
-                let countryData = [];
-                const populateDropdowns = () => {
-                    if (countryData.length === 0) return; // Don't run if data isn't loaded
+                
+                function populateDropdowns() {
                     let countryOptions = '<option value="">Select Nationality</option>';
                     let phoneOptions = '<option value="">Code</option>';
+                    
                     countryData.forEach(country => {
-                        const flag = country.flag || '';
-                        const name = country.name.common;
-                        countryOptions += `<option value="${name}">${flag} ${name}</option>`;
-                        if (country.idd.root) {
-                            const suffixes = country.idd.suffixes || [''];
-                            suffixes.forEach(suffix => {
-                                const code = `${country.idd.root}${suffix}`;
-                                phoneOptions += `<option value="${code}">${flag} ${code}</option>`;
-                            });
-                        }
+                        countryOptions += `<option value="${country.name}">${country.name}</option>`;
+                        phoneOptions += `<option value="+${country.phone}">+${country.phone}</option>`;
                     });
                     nationalitySelect.innerHTML = countryOptions;
                     phoneCodeSelect.innerHTML = phoneOptions;
-                };
-
-                fetch('https://restcountries.com/v3.1/all')
-                    .then(res => res.json())
-                    .then(countries => {
-                        countryData = countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
-                        populateDropdowns(); // Populate them once data is loaded
-                    }).catch(err => {
-                        console.error("Could not load country data", err);
-                        nationalitySelect.innerHTML = '<option value="">Could not load</option>';
-                        phoneCodeSelect.innerHTML = '<option value="">N/A</option>';
-                    });
-
+                }
 
                 const openModal = (mode, customer = {}) => {
                     customerForm.reset();
@@ -181,7 +159,7 @@
                     document.getElementById('modal-title').textContent = mode === 'edit' ? 'Edit Customer' : 'Add New Customer';
                     document.getElementById('customer-id').value = mode === 'edit' ? customer.id : '';
                     
-                    populateDropdowns(); // Ensure dropdowns are populated when modal opens
+                    populateDropdowns();
 
                     if (mode === 'edit') {
                         document.getElementById('fullName').value = customer.fullName || '';
@@ -189,20 +167,28 @@
                         document.getElementById('phone').value = customer.phone || '';
                         document.getElementById('address').value = customer.address || '';
                         document.getElementById('dob').value = customer.dob || '';
-                        // Set dropdown values after a short delay to ensure they are rendered
+                        document.getElementById('notes').value = customer.notes || '';
+                        
                         setTimeout(() => {
                            document.getElementById('phone-code').value = customer.phoneCode || '';
                            document.getElementById('nationality').value = customer.nationality || '';
                         }, 50);
-                        document.getElementById('notes').value = customer.notes || '';
+
                         if (customer.documents && Array.isArray(customer.documents)) {
                             displayExistingDocuments(customer.documents);
                         }
                     }
                     customerModal.classList.remove('hidden');
                 };
+
                 const closeModal = () => customerModal.classList.add('hidden');
                 
+                document.getElementById('header-actions').addEventListener('click', (e) => {
+                    if (e.target.closest('#add-customer-button')) {
+                        openModal('add');
+                    }
+                });
+
                 const displayExistingDocuments = (documents) => {
                     const container = document.getElementById('existing-documents-container');
                     container.innerHTML = '<label class="block text-sm font-medium text-gray-400 mb-2">Existing Documents</label>';
@@ -217,11 +203,10 @@
                 document.getElementById('document-upload').addEventListener('change', (e) => {
                     filesToUpload = Array.from(e.target.files);
                     const progressContainer = document.getElementById('upload-progress-container');
-                    progressContainer.innerHTML = ''; // Clear previous selections
+                    progressContainer.innerHTML = '';
                     filesToUpload.forEach(file => { progressContainer.innerHTML += `<p class="text-sm text-gray-400">${file.name}</p>`; });
                 });
 
-                addCustomerButton.addEventListener('click', () => openModal('add'));
                 document.getElementById('close-modal-button').addEventListener('click', closeModal);
                 document.getElementById('cancel-button').addEventListener('click', closeModal);
                 document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
@@ -254,9 +239,7 @@
                         if (filesToUpload.length > 0) {
                             const uploadPromises = filesToUpload.map(file => {
                                 const filePath = `customer_documents/${docRef.id}/${Date.now()}_${file.name}`;
-                                const uploadTask = storage.ref(filePath).put(file);
-                                // Optional: Add progress tracking here if needed
-                                return uploadTask.then(snapshot => snapshot.ref.getDownloadURL().then(url => ({ name: file.name, url })));
+                                return storage.ref(filePath).put(file).then(snapshot => snapshot.ref.getDownloadURL().then(url => ({ name: file.name, url })));
                             });
                             const newDocs = await Promise.all(uploadPromises);
                             await docRef.update({ documents: firebase.firestore.FieldValue.arrayUnion(...newDocs) });
@@ -285,15 +268,15 @@
                 customersTableBody.addEventListener('click', (e) => {
                     const button = e.target.closest('button, a');
                     if (!button) return;
-                    e.preventDefault(); // Prevent link navigation for JS-handled clicks
+                    e.preventDefault();
                     const id = button.dataset.id;
                     if (button.classList.contains('delete-btn')) {
-                        if (confirm('Are you sure you want to permanently delete this customer and all related data? This cannot be undone.')) { 
+                        if (confirm('Are you sure you want to permanently delete this customer? This cannot be undone.')) { 
                             customersRef.doc(id).delete();
                         }
                     } else if (button.classList.contains('edit-btn')) {
                         customersRef.doc(id).get().then(doc => { if (doc.exists) openModal('edit', { id: doc.id, ...doc.data() }); });
-                    } else if (button.href) { // It's the "View" link
+                    } else if (button.href) {
                         window.location.href = button.href;
                     }
                 });

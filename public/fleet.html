@@ -62,7 +62,7 @@
                     <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
                     <h1 class="text-2xl font-bold text-white ml-4 md:ml-0">Manage Vehicle Fleet</h1>
                 </div>
-                <div class="flex items-center gap-4">
+                <div id="header-actions" class="flex items-center gap-4">
                     <button id="export-pdf" class="btn-secondary flex items-center px-4 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-file-pdf mr-2"></i>Export PDF</button>
                     <button id="export-excel" class="btn-secondary flex items-center px-4 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-file-excel mr-2"></i>Export Excel</button>
                     <button id="add-vehicle-button" class="btn-primary flex items-center px-4 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-plus mr-2"></i> Add Vehicle</button>
@@ -112,13 +112,17 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="/js/firebase-init.js"></script>
+    <script src="/js/data.js"></script> <!-- Load the local data file -->
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 if (typeof db === 'undefined') {
                     console.error("Fleet Page: Firebase not initialized.");
-                    document.getElementById('vehicles-table-body').innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-500"><strong>Error: Application services failed to load.</strong></td></tr>`;
+                    return;
+                }
+                 if (typeof vehicleData === 'undefined') {
+                    console.error("Fleet Page: Local data script (data.js) not loaded.");
                     return;
                 }
                 initializeApp();
@@ -127,49 +131,6 @@
             function initializeApp() {
                 let currentVehiclesData = [];
                 let filesToUpload = [];
-
-                // --- FIX: Comprehensive Car Data for Dropdowns ---
-                const vehicleData = {
-                    "Acura": ["ILX", "MDX", "NSX", "RDX", "RLX", "TLX"],
-                    "Alfa Romeo": ["4C", "Giulia", "Stelvio"],
-                    "Audi": ["A3", "A4", "A5", "A6", "A7", "A8", "Q3", "Q5", "Q7", "Q8", "R8", "TT"],
-                    "Bentley": ["Bentayga", "Continental GT", "Flying Spur"],
-                    "BMW": ["2 Series", "3 Series", "4 Series", "5 Series", "7 Series", "8 Series", "i3", "i8", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "Z4"],
-                    "Buick": ["Enclave", "Encore", "Envision", "Regal"],
-                    "Cadillac": ["ATS", "CT4", "CT5", "CT6", "CTS", "Escalade", "XT4", "XT5", "XT6"],
-                    "Chevrolet": ["Blazer", "Bolt EV", "Camaro", "Corvette", "Equinox", "Impala", "Malibu", "Silverado", "Suburban", "Tahoe", "Traverse", "Trax"],
-                    "Chrysler": ["300", "Pacifica", "Voyager"],
-                    "Dodge": ["Challenger", "Charger", "Durango", "Grand Caravan", "Journey"],
-                    "Ferrari": ["488", "812 Superfast", "F8", "GTC4Lusso", "Portofino", "Roma", "SF90 Stradale"],
-                    "Fiat": ["124 Spider", "500", "500L", "500X"],
-                    "Ford": ["Bronco", "EcoSport", "Edge", "Escape", "Expedition", "Explorer", "F-150", "Mustang", "Ranger", "Transit"],
-                    "Genesis": ["G70", "G80", "G90", "GV80"],
-                    "GMC": ["Acadia", "Canyon", "Sierra", "Terrain", "Yukon"],
-                    "Honda": ["Accord", "Civic", "CR-V", "Fit", "HR-V", "Insight", "Odyssey", "Passport", "Pilot", "Ridgeline"],
-                    "Hyundai": ["Accent", "Elantra", "Ioniq", "Kona", "Nexo", "Palisade", "Santa Fe", "Sonata", "Tucson", "Veloster", "Venue"],
-                    "Infiniti": ["Q50", "Q60", "QX50", "QX60", "QX80"],
-                    "Jaguar": ["E-Pace", "F-Pace", "F-Type", "I-Pace", "XE", "XF", "XJ"],
-                    "Jeep": ["Cherokee", "Compass", "Gladiator", "Grand Cherokee", "Renegade", "Wrangler"],
-                    "Kia": ["Cadenza", "Forte", "K5", "Niro", "Optima", "Rio", "Seltos", "Sorento", "Soul", "Sportage", "Stinger", "Telluride"],
-                    "Lamborghini": ["Aventador", "Huracan", "Urus"],
-                    "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Range Rover", "Range Rover Evoque", "Range Rover Sport", "Range Rover Velar"],
-                    "Lexus": ["ES", "GS", "GX", "IS", "LC", "LS", "LX", "NX", "RC", "RX", "UX"],
-                    "Lincoln": ["Aviator", "Corsair", "Nautilus", "Navigator"],
-                    "Maserati": ["Ghibli", "Levante", "Quattroporte"],
-                    "Mazda": ["CX-3", "CX-30", "CX-5", "CX-9", "Mazda3", "Mazda6", "MX-5 Miata"],
-                    "McLaren": ["570S", "600LT", "720S", "GT"],
-                    "Mercedes-Benz": ["A-Class", "C-Class", "CLA", "CLS", "E-Class", "G-Class", "GLA", "GLB", "GLC", "GLE", "GLS", "S-Class", "SL", "SLC", "Sprinter"],
-                    "Mitsubishi": ["Eclipse Cross", "Mirage", "Outlander", "Outlander Sport"],
-                    "Nissan": ["370Z", "Altima", "Armada", "Frontier", "GT-R", "Kicks", "Leaf", "Maxima", "Murano", "Pathfinder", "Rogue", "Sentra", "Titan", "Versa"],
-                    "Porsche": ["718 Boxster", "718 Cayman", "911", "Cayenne", "Macan", "Panamera", "Taycan"],
-                    "Ram": ["1500", "2500", "3500"],
-                    "Rolls-Royce": ["Cullinan", "Dawn", "Ghost", "Phantom", "Wraith"],
-                    "Subaru": ["Ascent", "BRZ", "Crosstrek", "Forester", "Impreza", "Legacy", "Outback", "WRX"],
-                    "Tesla": ["Model 3", "Model S", "Model X", "Model Y"],
-                    "Toyota": ["4Runner", "Avalon", "C-HR", "Camry", "Corolla", "Highlander", "Land Cruiser", "Prius", "RAV4", "Sequoia", "Sienna", "Supra", "Tacoma", "Tundra", "Yaris"],
-                    "Volkswagen": ["Arteon", "Atlas", "Golf", "Jetta", "Passat", "Tiguan"],
-                    "Volvo": ["S60", "S90", "V60", "V90", "XC40", "XC60", "XC90"]
-                };
 
                 const brandSelect = document.getElementById('brand');
                 const modelSelect = document.getElementById('model');
@@ -197,7 +158,6 @@
                     }
                 });
 
-                // --- Sidebar Company Info ---
                 const companyProfileRef = db.collection('company_profile').doc('main');
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
@@ -210,7 +170,6 @@
                 const vehiclesRef = db.collection('vehicles');
                 const vehiclesTableBody = document.getElementById('vehicles-table-body');
                 
-                // --- Export Functions ---
                 document.getElementById('export-pdf').addEventListener('click', () => {
                      const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
@@ -232,7 +191,6 @@
                     XLSX.writeFile(workbook, "fleet-report.xlsx");
                 });
 
-                // --- Modal & Form Logic ---
                 const vehicleModal = document.getElementById('vehicle-modal');
                 const vehicleForm = document.getElementById('vehicle-form');
                 const saveButton = document.getElementById('save-vehicle-button');
@@ -249,8 +207,8 @@
                     document.getElementById('vehicle-id').value = mode === 'edit' ? vehicle.id : '';
                     if (mode === 'edit') {
                         document.getElementById('brand').value = vehicle.brand || '';
-                        brandSelect.dispatchEvent(new Event('change')); // Trigger change to populate models
-                        setTimeout(() => { // Allow models to populate
+                        brandSelect.dispatchEvent(new Event('change'));
+                        setTimeout(() => {
                            document.getElementById('model').value = vehicle.model || '';
                         }, 50);
                         document.getElementById('year').value = vehicle.year || '';
@@ -309,7 +267,6 @@
                             data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                             docRef = await vehiclesRef.add(data);
                         }
-                        // Handle file uploads
                         if (filesToUpload.length > 0) {
                             const uploadPromises = filesToUpload.map(file => {
                                 const filePath = `vehicle_images/${docRef.id}/${Date.now()}_${file.name}`;
@@ -328,7 +285,6 @@
                     }
                 });
 
-                // --- Real-time Data Loading ---
                 vehiclesRef.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
                     currentVehiclesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     if (snapshot.empty) {
@@ -341,14 +297,17 @@
                 });
                  
                 vehiclesTableBody.addEventListener('click', (e) => {
-                    const button = e.target.closest('button');
+                    const button = e.target.closest('button, a');
                     if (!button) return;
+                    e.preventDefault();
                     const id = button.dataset.id;
                     if (button.classList.contains('delete-btn')) {
                         if (confirm('Are you sure?')) { vehiclesRef.doc(id).delete(); }
                     } else if (button.classList.contains('edit-btn')) {
                         const vehicleData = currentVehiclesData.find(v => v.id === id);
                         if (vehicleData) openModal('edit', vehicleData);
+                    } else if (button.href) {
+                        window.location.href = button.href;
                     }
                 });
                 
