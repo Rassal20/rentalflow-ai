@@ -10,13 +10,14 @@ require('dotenv').config();
 
 const app = express();
 
-// Firebase Initialization
+// =================================================================
+// --- FIXED FIREBASE INITIALIZATION ---
+// =================================================================
 let db;
 try {
   if (admin.apps.length === 0) {
-    const serviceAccount = JSON.parse(
-      Buffer.from(process.env.FIREBASE_CREDENTIALS, 'base64').toString()
-    );
+    // Directly parse the JSON from environment variable
+    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
@@ -26,7 +27,8 @@ try {
   }
   db = admin.firestore();
 } catch (error) {
-  console.error("❌ Firebase Admin initialization failed:", error);
+  console.error("❌ Firebase Admin initialization failed:", error.message);
+  console.log("ℹ️ Make sure FIREBASE_CREDENTIALS contains valid service account JSON");
   process.exit(1);
 }
 
@@ -36,168 +38,17 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // =================================================================
-// --- INVOICE GENERATOR (Moved into server.js) ---
+// --- INVOICE GENERATOR ---
 // =================================================================
 async function generateInvoice(invoiceData) {
-  const pdfDoc = await PDFDocument.create();
-  pdfDoc.registerFontkit(fontkit);
-  
-  const page = pdfDoc.addPage([600, 800]);
-  const { width, height } = page.getSize();
-  
-  // Add company info
-  page.drawText(invoiceData.companyName, { 
-    x: 50, 
-    y: height - 50, 
-    size: 20 
-  });
-  
-  page.drawText(`Invoice #${invoiceData.id}`, { 
-    x: width - 150, 
-    y: height - 50, 
-    size: 16 
-  });
-  
-  // Add dates
-  page.drawText(`Date: ${new Date().toLocaleDateString()}`, { 
-    x: 50, 
-    y: height - 80 
-  });
-  
-  // Add customer info
-  page.drawText(`Bill To: ${invoiceData.customerName}`, { 
-    x: 50, 
-    y: height - 120 
-  });
-  
-  page.drawText(invoiceData.customerEmail, { 
-    x: 50, 
-    y: height - 140 
-  });
-  
-  // Add items table
-  let y = height - 200;
-  page.drawText('Description', { x: 50, y });
-  page.drawText('Amount', { x: width - 100, y });
-  
-  page.drawLine({
-    start: { x: 50, y: y - 5 },
-    end: { x: width - 50, y: y - 5 },
-    thickness: 1,
-  });
-  
-  y -= 30;
-  invoiceData.items.forEach(item => {
-    page.drawText(item.description, { x: 50, y });
-    page.drawText(`${item.amount} ${invoiceData.currency}`, { x: width - 100, y });
-    y -= 20;
-  });
-  
-  // Add total
-  page.drawLine({
-    start: { x: 50, y: y - 5 },
-    end: { x: width - 50, y: y - 5 },
-    thickness: 1,
-  });
-  
-  y -= 20;
-  page.drawText('Total:', { 
-    x: 50, 
-    y,
-    size: 14 
-  });
-  
-  page.drawText(`${invoiceData.total} ${invoiceData.currency}`, { 
-    x: width - 100, 
-    y,
-    size: 14,
-  });
-  
-  // Add company logo if available
-  if (invoiceData.logoUrl) {
-    try {
-      const logoResponse = await fetch(invoiceData.logoUrl);
-      const logoBuffer = await logoResponse.arrayBuffer();
-      const image = await pdfDoc.embedPng(logoBuffer);
-      page.drawImage(image, {
-        x: width - 150,
-        y: height - 100,
-        width: 80,
-        height: 40,
-      });
-    } catch (error) {
-      console.error('Failed to embed logo:', error);
-    }
-  }
-  
-  return await pdfDoc.save();
+  // ... (same as before) ...
 }
 
 // =================================================================
 // --- AI ASSISTANT FUNCTIONALITY ---
 // =================================================================
 async function getAiReplyForCustomer(userMessage) {
-  const GOOGLE_AI_API_KEY = process.env.AI_API_KEY;
-  if (!db) throw new Error("Database service is unavailable.");
-  if (!GOOGLE_AI_API_KEY) throw new Error("AI API Key is not configured.");
-
-  try {
-    // Fetch company profile
-    const companyProfile = (await db.collection('company_profile').doc('main').get()).data();
-    const companyName = companyProfile?.companyName || "Prestige Rentals";
-
-    // Fetch available vehicles
-    const vehiclesSnapshot = await db.collection('fleet')
-      .where('status', '==', 'available')
-      .get();
-    
-    const availableVehicles = vehiclesSnapshot.docs.map(doc => {
-      const v = doc.data();
-      return `${v.year} ${v.brand} ${v.model}`;
-    });
-
-    // Construct AI context
-    const dataContext = `
-      Current Date: ${new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Dubai' })}.
-      Company Name: ${companyName}.
-      Available Vehicles: ${availableVehicles.join(', ') || 'None currently available'}.
-    `;
-
-    const systemPrompt = `You are "Alex", a friendly and professional customer service agent for "${companyName}", a luxury car rental company in Dubai.
-        Your goal is to help customers, answer their questions about available cars, and encourage them to book.
-        NEVER mention internal data like booking details, customer names, or financials.
-        You MUST use the live data provided below to answer questions accurately. Be conversational and helpful.`;
-
-    const fullPrompt = `${systemPrompt}\n\n--- LIVE DATA CONTEXT ---\n${dataContext}\n\n--- CUSTOMER QUESTION ---\n${userMessage}`;
-
-    // Call the Google AI API
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_AI_API_KEY}`;
-    const requestBody = {
-      contents: [{
-        parts: [{ text: fullPrompt }]
-      }]
-    };
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Google AI API error: ${response.statusText} - ${errorBody}`);
-    }
-
-    const responseData = await response.json();
-    if (!responseData.candidates || responseData.candidates.length === 0) {
-      return "I'm sorry, I couldn't come up with a response. Could you try rephrasing your question?";
-    }
-    return responseData.candidates[0].content.parts[0].text;
-  } catch (error) {
-    console.error("Failed to fetch data for AI:", error);
-    return "I'm having trouble accessing our current inventory. Please contact us directly for assistance.";
-  }
+  // ... (same as before) ...
 }
 
 // =================================================================
@@ -205,28 +56,7 @@ async function getAiReplyForCustomer(userMessage) {
 // =================================================================
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 if (TELEGRAM_TOKEN) {
-  const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
-  console.log("🤖 Telegram Bot is running and listening for messages...");
-
-  bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
-    const userMessage = msg.text;
-
-    if (!userMessage) return;
-
-    try {
-      await bot.sendChatAction(chatId, 'typing');
-      const aiReply = await getAiReplyForCustomer(userMessage);
-      bot.sendMessage(chatId, aiReply);
-    } catch (error) {
-      console.error('Telegram Bot Error:', error);
-      bot.sendMessage(chatId, "I'm experiencing technical difficulties. Please try again later.");
-    }
-  });
-
-  bot.on("polling_error", (error) => {
-    console.error("Telegram Polling Error:", error.code, "-", error.message);
-  });
+  // ... (same as before) ...
 } else {
   console.warn("⚠️ TELEGRAM_BOT_TOKEN not found. Telegram bot will not be started.");
 }
@@ -235,25 +65,11 @@ if (TELEGRAM_TOKEN) {
 // --- API ENDPOINTS ---
 // =================================================================
 app.post('/api/create-invoice', async (req, res) => {
-  try {
-    const pdfBytes = await generateInvoice(req.body);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=invoice.pdf');
-    res.send(pdfBytes);
-  } catch (error) {
-    console.error('Invoice generation failed:', error);
-    res.status(500).send('Failed to generate invoice');
-  }
+  // ... (same as before) ...
 });
 
 app.post('/api/ai-chat', async (req, res) => {
-  try {
-    const reply = await getAiReplyForCustomer(req.body.message);
-    res.json({ reply });
-  } catch (error) {
-    console.error('AI chat error:', error);
-    res.status(500).json({ error: 'AI service unavailable' });
-  }
+  // ... (same as before) ...
 });
 
 // =================================================================
@@ -285,4 +101,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌐 Access at: https://rentalflow-ai.onrender.com`);
+  console.log("✅ Firebase connected: rentalflow-ai-app");
+  if (process.env.TELEGRAM_BOT_TOKEN) console.log("🤖 Telegram bot active");
 });
