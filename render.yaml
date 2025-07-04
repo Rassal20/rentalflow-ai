@@ -1,4 +1,3 @@
-# render.yaml
 services:
   - type: web
     name: rentalflow-ai
@@ -9,8 +8,8 @@ services:
       - key: PORT
         value: 3000
       - key: FIREBASE_CREDENTIALS
-        fromGroup: firebase_credentials
+        value: your_base64_encoded_firebase_credentials
       - key: TELEGRAM_BOT_TOKEN
-        fromGroup: telegram_token
+        value: 8098722195:AAHYS_feh9J7iN2EkpjLla4ULfocdYEXctg
       - key: AI_API_KEY
-        fromGroup: ai_api_key
+        value: AIzaSyAZL-KL0vyCw4qixtzJhP7H8PuyytDWQhs

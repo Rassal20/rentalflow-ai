@@ -1,4 +1,4 @@
-// api/invoice-generator.js
+// api/invoiceGenerator.js
 const { PDFDocument } = require('pdf-lib');
 const fontkit = require('@pdf-lib/fontkit');
 const fetch = require('node-fetch');

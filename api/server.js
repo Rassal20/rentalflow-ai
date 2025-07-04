@@ -5,7 +5,7 @@ const path = require('path');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const TelegramBot = require('node-telegram-bot-api');
-const { generateInvoice } = require('./invoice-generator');
+const { generateInvoice } = require('./invoiceGenerator'); // Fixed filename
 require('dotenv').config();
 
 const app = express();
