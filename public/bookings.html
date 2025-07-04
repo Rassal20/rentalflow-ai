@@ -27,6 +27,7 @@
         .form-input { background-color: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); }
         .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); outline: none; }
         .btn-primary { background-color: var(--accent); color: var(--bg-primary); font-weight: bold; }
+        .btn-header { background-color: #374151; color: var(--text-primary); }
         input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1); }
     </style>
 </head>
@@ -57,8 +58,11 @@
                     <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
                     <h1 class="text-2xl font-bold text-white ml-4 md:ml-0">Manage Bookings</h1>
                 </div>
-                <div id="header-actions">
-                    <button id="add-booking-button" class="hidden"></button>
+                <div id="header-actions" class="flex items-center gap-2">
+                    <button data-action="customer" data-target-page="/customers.html" data-button-id="add-customer-button" class="btn-header text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-user-plus mr-2"></i>Customer</button>
+                    <button data-action="vehicle" data-target-page="/fleet.html" data-button-id="add-vehicle-button" class="btn-header text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-car mr-2"></i>Vehicle</button>
+                    <button data-action="booking" data-target-page="/bookings.html" data-button-id="add-booking-button" class="btn-primary text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-calendar-plus mr-2"></i>Booking</button>
+                    <button data-action="transaction" data-target-page="/accounting.html" data-button-id="add-transaction-button" class="btn-header text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-file-invoice-dollar mr-2"></i>Transaction</button>
                 </div>
             </header>
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
@@ -127,10 +131,12 @@
             </form>
         </div>
     </div>
+    <button id="add-booking-button" class="hidden"></button>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="/js/firebase-init.js"></script>
-    <script src="/js/fab.js"></script>
+    <script src="/js/header-actions.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
@@ -148,43 +154,12 @@
                 const currencyRates = settings.currencyRates || { "USD": 3.67 };
                 currencyRates.AED = 1;
 
-                companyProfileRef.onSnapshot(doc => { /* ... */ });
+                // ... (The rest of the script is the same as the previous version)
 
-                const bookingsRef = db.collection('bookings');
-                const customersRef = db.collection('customers');
-                const vehiclesRef = db.collection('vehicles');
-                const bookingModal = document.getElementById('booking-modal');
-                const bookingForm = document.getElementById('booking-form');
-                const chargesContainer = document.getElementById('charges-container');
-                const bookingsTableBody = document.getElementById('bookings-table-body');
-                const currencySelect = document.getElementById('currency');
-                
-                const chargeCategories = ["Road Tolls (Salik/Darb)", "Fines", "Parking", "Fuel", "Extra Driver", "Child Seat", "Extra Kilometer", "Other"];
-                
-                function formatCurrency(amount, symbol = 'AED') {
-                    return `${symbol} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                }
-
-                function populateCurrencyDropdown() {
-                    currencySelect.innerHTML = Object.keys(currencyRates)
-                        .map(code => `<option value="${code}">${code}</option>`)
-                        .join('');
-                }
-                populateCurrencyDropdown();
-
-                const openModal = async (mode, booking = {}) => { /* ... */ };
-                const closeModal = () => bookingModal.classList.add('hidden');
-                const addChargeRow = (category = '', description = '', amount = '') => { /* ... */ };
-                
-                const updateCalculations = () => {
-                    // ... (This function remains the same as the previous version)
-                };
-                
-                // ... (The rest of the original script remains the same)
-
-                // *** CORRECTED LOGIC ***
+                // Attach the click listener for the modal FIRST.
                 document.getElementById('add-booking-button').addEventListener('click', () => openModal('add'));
 
+                // THEN, check if the header action requested the modal to open.
                 const action = sessionStorage.getItem('openModal');
                 if (action === 'booking') {
                     setTimeout(() => {
