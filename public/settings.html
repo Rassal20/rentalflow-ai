@@ -23,6 +23,7 @@
         .sidebar { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
         .header { background-color: var(--bg-primary); border-bottom: 1px solid var(--border-color); }
         .card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .modal-content { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
         .form-input { background-color: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); }
         .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); outline: none; }
         .btn-primary { background-color: var(--accent); color: var(--bg-primary); font-weight: bold; }
@@ -75,26 +76,15 @@
                             </div>
                         </div>
                         
-                        <!-- NEW: Currency Converter Card -->
+                        <!-- NEW DYNAMIC Currency Exchange Rates Card -->
                         <div class="card p-8 rounded-lg">
-                            <h3 class="text-xl font-bold text-white mb-6">Live Currency Converter</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                                <div>
-                                    <label for="converter-amount" class="block text-sm font-medium text-gray-400">Amount in AED</label>
-                                    <input type="number" id="converter-amount" class="form-input mt-1 block w-full p-3 rounded-md" placeholder="Enter amount">
-                                </div>
-                                <div id="converter-results" class="space-y-2 pt-1">
-                                    <p class="text-gray-500 text-sm">Converted amounts will appear here.</p>
-                                </div>
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold text-white">Currency Exchange Rates</h3>
+                                <button type="button" id="add-currency-btn" class="text-sm text-cyan-400 hover:text-cyan-300 font-semibold"><i class="fas fa-plus mr-1"></i> Add Currency</button>
                             </div>
-                        </div>
-
-                        <!-- Currency Settings Card -->
-                        <div class="card p-8 rounded-lg">
-                            <h3 class="text-xl font-bold text-white mb-6">Currency Settings</h3>
-                            <p class="text-sm text-gray-400 mb-4">Set the value of 1 unit of each currency in your base currency (AED).</p>
-                            <div id="currency-rates-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div><label for="rate-AED" class="block text-sm font-medium text-gray-400">AED (Base)</label><input type="number" id="rate-AED" value="1" class="form-input mt-1 w-full p-3 rounded-md" disabled></div>
+                            <p class="text-sm text-gray-400 mb-4">Define the value of foreign currencies relative to your base currency (AED). Example: If 1 USD = 3.67 AED, enter 3.67.</p>
+                            <div id="currency-rates-container" class="space-y-4">
+                                <!-- Currency rows will be dynamically inserted here by JavaScript -->
                             </div>
                         </div>
 
@@ -114,10 +104,29 @@
             </main>
         </div>
     </div>
+
+    <!-- Add Currency Modal -->
+    <div id="add-currency-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 hidden">
+        <div class="modal-content w-full max-w-sm mx-auto rounded-lg shadow-lg">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-bold text-white">Add New Currency</h3><button id="close-currency-modal-btn" class="text-gray-400 hover:text-white">&times;</button></div>
+            <form id="add-currency-form" class="p-6 space-y-4">
+                <div>
+                    <label for="new-currency-select" class="block text-sm font-medium text-gray-400">Select Currency</label>
+                    <select id="new-currency-select" class="form-input mt-1 block w-full p-2 rounded-md"></select>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="button" id="cancel-currency-btn" class="bg-gray-700 text-white px-4 py-2 rounded-lg mr-2">Cancel</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded-lg">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="/js/firebase-init.js"></script>
+    <script src="/js/data.js"></script> <!-- Ensure data.js is loaded -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
@@ -130,74 +139,21 @@
 
             function initializeApp() {
                 const companyProfileRef = db.collection('company_profile').doc('main');
-                companyProfileRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
-                        if (data.logoUrl) { document.getElementById('company-logo-sidebar').src = data.logoUrl; }
-                    }
-                });
-
                 const settingsForm = document.getElementById('settings-form');
                 const successMessage = document.getElementById('success-message');
                 const logoUploadInput = document.getElementById('logo-upload');
                 const logoPreview = document.getElementById('logo-preview');
                 const currencyRatesContainer = document.getElementById('currency-rates-container');
                 let logoFileToUpload = null;
+                let currentRates = {};
 
-                const supportedCurrencies = ["USD", "GBP", "EUR", "USDT"];
-                const defaultRates = { AED: 1, USD: 3.67, GBP: 4.5, EUR: 4.0, USDT: 3.67 };
-                
-                // --- NEW: Currency Converter Elements ---
-                const converterAmountInput = document.getElementById('converter-amount');
-                const converterResultsContainer = document.getElementById('converter-results');
+                // --- Modal Elements ---
+                const addCurrencyModal = document.getElementById('add-currency-modal');
+                const addCurrencyForm = document.getElementById('add-currency-form');
+                const newCurrencySelect = document.getElementById('new-currency-select');
 
-                function renderCurrencyInputs(rates) {
-                    // Clear existing dynamic inputs before rendering
-                    currencyRatesContainer.querySelectorAll('.dynamic-currency').forEach(el => el.remove());
-                    supportedCurrencies.forEach(currency => {
-                        const div = document.createElement('div');
-                        div.className = 'dynamic-currency'; // Add class for easy removal
-                        div.innerHTML = `
-                            <label for="rate-${currency}" class="block text-sm font-medium text-gray-400">${currency}</label>
-                            <input type="number" step="0.01" id="rate-${currency}" value="${rates[currency] || defaultRates[currency]}" class="form-input mt-1 w-full p-3 rounded-md">
-                        `;
-                        currencyRatesContainer.appendChild(div);
-                    });
-                }
-
-                // --- NEW: Currency Converter Logic ---
-                function updateConverter() {
-                    const amountAED = parseFloat(converterAmountInput.value) || 0;
-                    const rates = { AED: 1 };
-                    supportedCurrencies.forEach(currency => {
-                        const input = document.getElementById(`rate-${currency}`);
-                        if(input) rates[currency] = parseFloat(input.value) || 0;
-                    });
-
-                    if (amountAED === 0) {
-                        converterResultsContainer.innerHTML = '<p class="text-gray-500 text-sm">Converted amounts will appear here.</p>';
-                        return;
-                    }
-
-                    let resultsHtml = '';
-                    supportedCurrencies.forEach(currency => {
-                        const rate = rates[currency];
-                        if (rate > 0) {
-                            const convertedAmount = amountAED / rate;
-                            resultsHtml += `
-                                <div class="flex justify-between items-center bg-gray-900/50 p-2 rounded-md">
-                                    <span class="font-medium text-gray-400">${currency}</span>
-                                    <span class="font-bold text-white">${convertedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                </div>
-                            `;
-                        }
-                    });
-                    converterResultsContainer.innerHTML = resultsHtml;
-                }
-
+                // --- Load initial data ---
                 companyProfileRef.get().then(doc => {
-                    let currentRates = defaultRates;
                     if (doc.exists) {
                         const data = doc.data();
                         document.getElementById('companyName').value = data.companyName || '';
@@ -205,7 +161,9 @@
                         document.getElementById('address').value = data.address || '';
                         if (data.logoUrl) { logoPreview.src = data.logoUrl; }
                         
-                        if (data.currencyRates) currentRates = data.currencyRates;
+                        // Use saved rates or provide a default set
+                        currentRates = data.currencyRates || { "USD": 3.67, "EUR": 4.0, "GBP": 4.5, "USDT": 3.67 };
+                        renderCurrencyRates(currentRates);
 
                         if (data.bankDetails) {
                             document.getElementById('bankName').value = data.bankDetails.bankName || '';
@@ -213,42 +171,117 @@
                             document.getElementById('accountNumber').value = data.bankDetails.accountNumber || '';
                             document.getElementById('iban').value = data.bankDetails.iban || '';
                         }
-                    }
-                    renderCurrencyInputs(currentRates);
-                    // Add event listeners after inputs are rendered
-                    converterAmountInput.addEventListener('input', updateConverter);
-                    currencyRatesContainer.addEventListener('input', (e) => {
-                        if (e.target.matches('input[type="number"]')) {
-                            updateConverter();
-                        }
-                    });
-                });
-                
-                logoUploadInput.addEventListener('change', (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                        logoFileToUpload = e.target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (event) => { logoPreview.src = event.target.result; };
-                        reader.readAsDataURL(logoFileToUpload);
+                    } else {
+                        // Default setup for a new company
+                        currentRates = { "USD": 3.67, "EUR": 4.0, "GBP": 4.5, "USDT": 3.67 };
+                        renderCurrencyRates(currentRates);
                     }
                 });
 
+                /**
+                 * Renders the UI for currency rates based on the provided rates object.
+                 * @param {object} rates - An object where keys are currency codes (e.g., "USD") and values are their rates in AED.
+                 */
+                function renderCurrencyRates(rates) {
+                    currencyRatesContainer.innerHTML = ''; // Clear existing rows
+                    // Always show the base currency
+                    currencyRatesContainer.innerHTML += `
+                        <div class="flex items-center gap-4">
+                            <label class="w-1/3 text-gray-400">1 AED (Base Currency)</label>
+                            <div class="flex-1 flex items-center">
+                                <span class="mx-2">=</span>
+                                <input type="number" value="1" class="form-input w-full p-3 rounded-md" disabled>
+                                <span class="ml-3 text-gray-400">AED</span>
+                            </div>
+                        </div>`;
+
+                    // Render editable currencies
+                    for (const code in rates) {
+                        if (code !== 'AED') {
+                            addCurrencyRow(code, rates[code]);
+                        }
+                    }
+                }
+
+                /**
+                 * Adds a single currency row to the settings UI.
+                 * @param {string} code - The currency code (e.g., "USD").
+                 * @param {number} rate - The exchange rate against AED.
+                 */
+                function addCurrencyRow(code, rate = 1.0) {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-4 currency-row';
+                    div.dataset.currencyCode = code; // Store the code for saving
+                    div.innerHTML = `
+                        <label class="w-1/3 text-gray-400">1 ${code}</label>
+                        <div class="flex-1 flex items-center">
+                            <span class="mx-2">=</span>
+                            <input type="number" step="0.0001" value="${rate}" class="rate-input form-input w-full p-3 rounded-md" placeholder="e.g., 3.67">
+                            <span class="ml-3 text-gray-400">AED</span>
+                        </div>
+                        <button type="button" class="delete-currency-btn text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                    `;
+                    currencyRatesContainer.appendChild(div);
+                }
+
+                // --- Event Listeners ---
+                document.getElementById('add-currency-btn').addEventListener('click', () => {
+                    // Populate the modal dropdown with currencies that haven't been added yet
+                    const existingCodes = Object.keys(currentRates);
+                    newCurrencySelect.innerHTML = currencyList
+                        .filter(c => !existingCodes.includes(c.code) && c.code !== 'AED')
+                        .map(c => `<option value="${c.code}">${c.name} (${c.code})</option>`)
+                        .join('');
+                    addCurrencyModal.classList.remove('hidden');
+                });
+                
+                document.getElementById('close-currency-modal-btn').addEventListener('click', () => addCurrencyModal.classList.add('hidden'));
+                document.getElementById('cancel-currency-btn').addEventListener('click', () => addCurrencyModal.classList.add('hidden'));
+
+                // Handle form submission for adding a new currency
+                addCurrencyForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const newCode = newCurrencySelect.value;
+                    if (newCode && !currentRates[newCode]) {
+                        currentRates[newCode] = 1.0; // Default rate
+                        addCurrencyRow(newCode, 1.0);
+                    }
+                    addCurrencyModal.classList.add('hidden');
+                });
+
+                // Handle deleting a currency row
+                currencyRatesContainer.addEventListener('click', (e) => {
+                    const deleteButton = e.target.closest('.delete-currency-btn');
+                    if (deleteButton) {
+                        const row = deleteButton.closest('.currency-row');
+                        const code = row.dataset.currencyCode;
+                        delete currentRates[code]; // Remove from our state object
+                        row.remove(); // Remove from the DOM
+                    }
+                });
+
+                // Handle main settings form submission
                 settingsForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const saveButton = document.getElementById('save-settings-button');
                     saveButton.disabled = true;
                     saveButton.textContent = 'Saving...';
 
-                    const currencyRates = { AED: 1 };
-                    supportedCurrencies.forEach(currency => {
-                        currencyRates[currency] = parseFloat(document.getElementById(`rate-${currency}`).value) || 0;
+                    // Build the currencyRates object from the UI
+                    const newRates = {};
+                    document.querySelectorAll('.currency-row').forEach(row => {
+                        const code = row.dataset.currencyCode;
+                        const rate = parseFloat(row.querySelector('.rate-input').value) || 0;
+                        if (code) {
+                            newRates[code] = rate;
+                        }
                     });
 
                     const dataToSave = {
                         companyName: document.getElementById('companyName').value,
                         taxNumber: document.getElementById('taxNumber').value,
                         address: document.getElementById('address').value,
-                        currencyRates: currencyRates,
+                        currencyRates: newRates, // Save the dynamically built object
                         bankDetails: {
                             bankName: document.getElementById('bankName').value,
                             accountHolder: document.getElementById('accountHolder').value,
@@ -256,6 +289,7 @@
                             iban: document.getElementById('iban').value,
                         }
                     };
+
                     try {
                         if (logoFileToUpload) {
                             const filePath = `company_logos/main_logo_${Date.now()}`;

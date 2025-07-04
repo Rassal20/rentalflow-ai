@@ -58,7 +58,7 @@
                     <h1 class="text-2xl font-bold text-white ml-4 md:ml-0">Manage Bookings</h1>
                 </div>
                 <div id="header-actions">
-                    <button id="add-booking-button" class="hidden"></button> <!-- Hidden button for FAB to trigger -->
+                    <button id="add-booking-button" class="hidden"></button>
                 </div>
             </header>
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
@@ -92,7 +92,7 @@
                         <div><label for="currency" class="block text-sm text-gray-400">Currency</label><select id="currency" class="form-input mt-1 block w-full p-2 rounded-md"></select></div>
                         <div><label for="rentalRate" class="block text-sm text-gray-400">Rate Per Day</label><input type="number" step="0.01" id="rentalRate" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
                         <div class="text-center"><p class="text-sm text-gray-400">Rental Period</p><p id="days-display" class="font-bold text-lg text-white">0 Days</p></div>
-                        <div><label class="block text-sm text-gray-400">Rental Total</label><p id="rental-total-display" class="mt-1 w-full p-2 bg-gray-900 rounded-md text-white">Dhs 0.00</p></div>
+                        <div><label class="block text-sm text-gray-400">Rental Total</label><p id="rental-total-display" class="mt-1 w-full p-2 bg-gray-900 rounded-md text-white">AED 0.00</p></div>
                         <div><label for="taxRate" class="block text-sm text-gray-400">VAT (%)</label><input type="number" id="taxRate" value="5" class="form-input mt-1 w-full p-2 rounded-md"></div>
                     </div>
                     <div><label class="block text-sm mb-2 text-gray-400">Additional Charges & Fines</label><div id="charges-container" class="space-y-2"></div><button type="button" id="add-charge-button" class="mt-2 text-sm text-cyan-400 hover:text-cyan-300 font-semibold"><i class="fas fa-plus mr-1"></i> Add Item</button></div>
@@ -101,14 +101,14 @@
                 <div class="border-t border-gray-700 pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="md:col-span-1 bg-gray-900/50 p-4 rounded-lg space-y-2">
                         <h4 class="font-semibold text-white">Financial Summary</h4>
-                        <div class="flex justify-between text-sm text-gray-400"><span>Subtotal</span><span id="summary-subtotal">Dhs 0.00</span></div>
+                        <div class="flex justify-between text-sm text-gray-400"><span>Subtotal</span><span id="summary-subtotal">AED 0.00</span></div>
                         <div class="flex justify-between text-sm text-gray-400"><span>Discount</span><input type="number" step="0.01" id="discount" class="form-input w-24 p-1 rounded-md text-sm text-right bg-transparent border-gray-600" placeholder="0.00"></div>
-                        <div class="flex justify-between text-sm text-gray-400 font-bold"><span>Total Before Tax</span><span id="summary-before-tax">Dhs 0.00</span></div>
-                        <div class="flex justify-between text-sm text-gray-400"><span>VAT</span><span id="summary-tax">Dhs 0.00</span></div>
-                        <div class="flex justify-between font-bold text-xl border-t border-gray-700 pt-2 mt-2 text-white"><span>Total Amount</span><span id="summary-total">Dhs 0.00</span></div>
+                        <div class="flex justify-between text-sm text-gray-400 font-bold"><span>Total Before Tax</span><span id="summary-before-tax">AED 0.00</span></div>
+                        <div class="flex justify-between text-sm text-gray-400"><span>VAT</span><span id="summary-tax">AED 0.00</span></div>
+                        <div class="flex justify-between font-bold text-xl border-t border-gray-700 pt-2 mt-2 text-white"><span>Total Amount</span><span id="summary-total">AED 0.00</span></div>
                         <hr class="border-gray-600 my-2">
-                        <div class="flex justify-between text-sm text-green-400"><span>Amount Paid</span><span id="summary-paid">Dhs 0.00</span></div>
-                        <div class="flex justify-between font-bold text-lg text-red-400"><span>Pending Balance</span><span id="summary-pending">Dhs 0.00</span></div>
+                        <div class="flex justify-between text-sm text-green-400"><span>Amount Paid</span><span id="summary-paid">AED 0.00</span></div>
+                        <div class="flex justify-between font-bold text-lg text-red-400"><span>Pending Balance</span><span id="summary-pending">AED 0.00</span></div>
                     </div>
                     <div class="md:col-span-2 space-y-4">
                         <div><label for="status" class="block text-sm text-gray-400">Booking Status</label><select id="status" class="form-input mt-1 block w-full p-2 rounded-md" required><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="rented">Rented</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
@@ -130,7 +130,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="/js/firebase-init.js"></script>
-    <script src="/js/fab.js"></script> <!-- FAB SCRIPT ADDED -->
+    <script src="/js/fab.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
@@ -142,8 +142,96 @@
             }, 200);
 
             async function initializeApp() {
-                // ... (The entire script content of bookings.html remains the same, just add the fab.js script tag before it)
-                // ... For brevity, the original script is not repeated here.
+                const action = sessionStorage.getItem('openModal');
+                if (action === 'booking') {
+                    setTimeout(() => {
+                        document.getElementById('add-booking-button')?.click();
+                    }, 100);
+                    sessionStorage.removeItem('openModal');
+                }
+
+                const companyProfileRef = db.collection('company_profile').doc('main');
+                // Fetch settings once to get currency rates
+                const settingsDoc = await companyProfileRef.get();
+                const settings = settingsDoc.exists ? settingsDoc.data() : {};
+                const currencyRates = settings.currencyRates || { "USD": 3.67 };
+                // Add AED as the base rate
+                currencyRates.AED = 1;
+
+                companyProfileRef.onSnapshot(doc => { /* ... */ });
+
+                const bookingsRef = db.collection('bookings');
+                const customersRef = db.collection('customers');
+                const vehiclesRef = db.collection('vehicles');
+                const bookingModal = document.getElementById('booking-modal');
+                const bookingForm = document.getElementById('booking-form');
+                const chargesContainer = document.getElementById('charges-container');
+                const bookingsTableBody = document.getElementById('bookings-table-body');
+                const currencySelect = document.getElementById('currency');
+                
+                const chargeCategories = ["Road Tolls (Salik/Darb)", "Fines", "Parking", "Fuel", "Extra Driver", "Child Seat", "Extra Kilometer", "Other"];
+                
+                function formatCurrency(amount, symbol = 'AED') {
+                    return `${symbol} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+
+                function populateCurrencyDropdown() {
+                    currencySelect.innerHTML = Object.keys(currencyRates)
+                        .map(code => `<option value="${code}">${code}</option>`)
+                        .join('');
+                }
+                populateCurrencyDropdown();
+
+                const openModal = async (mode, booking = {}) => {
+                    // ... (rest of openModal function is the same)
+                };
+
+                const closeModal = () => bookingModal.classList.add('hidden');
+
+                const addChargeRow = (category = '', description = '', amount = '') => {
+                    // ... (this function is the same)
+                };
+                
+                const updateCalculations = () => {
+                    const selectedCurrency = currencySelect.value || 'AED';
+                    const exchangeRate = currencyRates[selectedCurrency] || 1;
+
+                    const startDate = new Date(document.getElementById('startDate').value);
+                    const endDate = new Date(document.getElementById('endDate').value);
+                    const days = (endDate - startDate > 0) ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) : 0;
+                    document.getElementById('days-display').textContent = `${days} Days`;
+
+                    const rentalRate = parseFloat(document.getElementById('rentalRate').value) || 0;
+                    const rentalTotal = days * rentalRate;
+                    document.getElementById('rental-total-display').textContent = formatCurrency(rentalTotal, selectedCurrency);
+
+                    let chargesTotal = 0;
+                    chargesContainer.querySelectorAll('.charge-amount').forEach(i => chargesTotal += parseFloat(i.value) || 0);
+                    
+                    const subtotal = rentalTotal + chargesTotal;
+                    document.getElementById('summary-subtotal').textContent = formatCurrency(subtotal, selectedCurrency);
+
+                    const discount = parseFloat(document.getElementById('discount').value) || 0;
+                    const totalBeforeTax = subtotal - discount;
+                    document.getElementById('summary-before-tax').textContent = formatCurrency(totalBeforeTax, selectedCurrency);
+
+                    const taxRate = (parseFloat(document.getElementById('taxRate').value) || 0) / 100;
+                    const taxAmount = totalBeforeTax * taxRate;
+                    document.getElementById('summary-tax').textContent = formatCurrency(taxAmount, selectedCurrency);
+
+                    const total = totalBeforeTax + taxAmount;
+                    document.getElementById('summary-total').textContent = formatCurrency(total, selectedCurrency);
+                    
+                    // Always calculate pending balance in AED
+                    const totalAED = total * exchangeRate;
+                    const paidAED = (bookingForm.dataset.paidAmount || 0) * 1; // Read paid amount from dataset
+                    const pendingAED = totalAED - paidAED;
+                    
+                    document.getElementById('summary-paid').textContent = formatCurrency(paidAED, 'AED');
+                    document.getElementById('summary-pending').textContent = formatCurrency(pendingAED, 'AED');
+                };
+                
+                // ... (The rest of the script remains the same)
             }
         });
     </script>
