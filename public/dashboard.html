@@ -1,150 +1,393 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - RentalFlow AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-primary: #0D1117;
-            --bg-secondary: #161B22;
-            --border-color: #30363D;
-            --text-primary: #E6EDF3;
-            --text-secondary: #8B949E;
-            --accent: #22D3EE;
-        }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); }
-        h1, h2, h3, .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
-        .sidebar { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
-        .header { background-color: var(--bg-primary); border-bottom: 1px solid var(--border-color); }
-        .card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
-        .btn-header { background-color: #374151; color: var(--text-primary); }
-    </style>
+    <title>Dashboard | RentalFlow AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body class="text-gray-300">
-    <div class="flex h-screen">
-        <!-- Sidebar -->
-        <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
-            <div class="flex-grow">
-                <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
-                    <img id="company-logo-sidebar" src="https://placehold.co/40x40/161B22/30363D?text=..." alt="Logo" class="w-10 h-10 rounded-lg object-cover">
-                    <span id="company-name-sidebar" class="text-2xl font-bold font-rajdhani text-white">RentalFlow</span>
-                </a>
-                <nav class="space-y-2">
-                    <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-tachometer-alt w-6 text-cyan-400"></i><span class="ml-3">Dashboard</span></a>
-                    <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
-                    <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
-                    <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
-                    <a href="/financials.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-chart-line w-6"></i><span class="ml-3">Financials</span></a>
-                    <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
-                </nav>
-            </div>
-            <div>
-                 <a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-car"></i>
+                <span id="company-name">RentalFlow AI</span>
             </div>
         </div>
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="header flex justify-between items-center p-6">
-                <div class="flex items-center">
-                    <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
-                    <h1 class="text-2xl font-bold text-white ml-4 md:ml-0">Dashboard</h1>
-                </div>
-                <!-- Universal Action Buttons -->
-                <div id="header-actions" class="flex items-center gap-2">
-                    <button data-action="customer" data-target-page="/customers.html" data-button-id="add-customer-button" class="btn-header text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-user-plus mr-2"></i>Customer</button>
-                    <button data-action="vehicle" data-target-page="/fleet.html" data-button-id="add-vehicle-button" class="btn-header text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-car mr-2"></i>Vehicle</button>
-                    <button data-action="booking" data-target-page="/bookings.html" data-button-id="add-booking-button" class="btn-header text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-calendar-plus mr-2"></i>Booking</button>
-                    <button data-action="transaction" data-target-page="/accounting.html" data-button-id="add-transaction-button" class="btn-header text-sm px-3 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-file-invoice-dollar mr-2"></i>Transaction</button>
-                </div>
-            </header>
-            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
-                <!-- Financial Widgets -->
-                <h3 class="text-xl font-semibold text-gray-400 mb-4">This Month's Financials</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Income</p><p id="income-this-month" class="text-4xl font-bold text-white mt-1">Dhs 0.00</p></div><div class="bg-green-500/20 text-green-400 p-2 rounded-lg"><i class="fas fa-arrow-up"></i></div></div></div>
-                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Expense</p><p id="expense-this-month" class="text-4xl font-bold text-white mt-1">Dhs 0.00</p></div><div class="bg-red-500/20 text-red-400 p-2 rounded-lg"><i class="fas fa-arrow-down"></i></div></div></div>
-                    <div class="card p-6 rounded-lg"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-400">Profit / Loss</p><p id="profit-this-month" class="text-4xl font-bold text-white mt-1">Dhs 0.00</p></div><div class="bg-cyan-500/20 text-cyan-400 p-2 rounded-lg"><i class="fas fa-balance-scale"></i></div></div></div>
-                </div>
-
-                <!-- Operational Widgets -->
-                <h3 class="text-xl font-semibold text-gray-400 mb-4">Operations</h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div class="card p-6 rounded-lg"><p class="text-sm text-gray-400">Pending Bookings</p><p id="pending-bookings" class="text-4xl font-bold text-yellow-400 mt-1">0</p></div>
-                    <div class="card p-6 rounded-lg"><p class="text-sm text-gray-400">Cars Returning Soon</p><p id="returning-soon" class="text-4xl font-bold text-blue-400 mt-1">0</p></div>
-                    <div class="card p-6 rounded-lg"><p class="text-sm text-gray-400">Cars in Maintenance</p><p id="in-maintenance" class="text-4xl font-bold text-red-400 mt-1">0</p></div>
-                    <div class="card p-6 rounded-lg"><p class="text-sm text-gray-400">Needs Service Soon</p><p id="needs-service" class="text-4xl font-bold text-orange-400 mt-1">0</p></div>
-                </div>
-            </main>
+        <div class="sidebar-menu">
+            <div class="menu-item active" data-page="dashboard">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" data-page="fleet">
+                <i class="fas fa-car"></i>
+                <span>Fleet Management</span>
+            </div>
+            <div class="menu-item" data-page="bookings">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Bookings</span>
+            </div>
+            <div class="menu-item" data-page="customers">
+                <i class="fas fa-users"></i>
+                <span>Customers</span>
+            </div>
+            <div class="menu-item" data-page="invoices">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Invoices</span>
+            </div>
+            <div class="menu-item" data-page="financials">
+                <i class="fas fa-chart-line"></i>
+                <span>Financials</span>
+            </div>
+            <div class="menu-item" data-page="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </div>
+            <div class="menu-item" data-page="ai">
+                <i class="fas fa-robot"></i>
+                <span>AI Assistant</span>
+            </div>
         </div>
     </div>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="/js/firebase-init.js"></script>
-    <script src="/js/header-actions.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                if (!db) { console.error("DB not found"); return; }
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <button class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search...">
+            </div>
+            <div id="header-actions" class="header-actions">
+                <button class="btn btn-primary" data-action="customer" data-target-page="customers.html" data-button-id="addCustomerBtn">
+                    <i class="fas fa-user-plus"></i> Add Customer
+                </button>
+                <button class="btn btn-primary" data-action="vehicle" data-target-page="fleet.html" data-button-id="addVehicleBtn">
+                    <i class="fas fa-car"></i> Add Vehicle
+                </button>
+                <button class="btn btn-primary" data-action="booking" data-target-page="bookings.html" data-button-id="addBookingBtn">
+                    <i class="fas fa-calendar-plus"></i> New Booking
+                </button>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar" id="user-avatar">JD</div>
+                <div>
+                    <div class="user-name" id="user-name">John Doe</div>
+                    <div class="user-role">Admin</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="content">
+            <div class="section-title">
+                <h2>Dashboard Overview</h2>
+                <div id="current-date">Loading date...</div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" id="stats-container">
+                <!-- Filled by JavaScript -->
+            </div>
+
+            <!-- Charts and Data -->
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Revenue Overview</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenue-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Recent Bookings</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="recent-bookings">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Vehicle</th>
+                                    <th>Period</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Filled by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Vehicles -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Available Luxury Vehicles</h3>
+                </div>
+                <div class="table-responsive">
+                    <table id="available-vehicles">
+                        <thead>
+                            <tr>
+                                <th>Vehicle</th>
+                                <th>Year</th>
+                                <th>Type</th>
+                                <th>Daily Rate</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Filled by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- AI Assistant -->
+            <div class="ai-assistant">
+                <div class="ai-header">
+                    <h3><i class="fas fa-robot"></i> RentalFlow AI Assistant</h3>
+                </div>
+                <div class="ai-messages" id="ai-messages">
+                    <div class="message bot">
+                        <p>Hello! I'm Alex, your AI assistant. How can I help with your luxury car rental needs today?</p>
+                    </div>
+                </div>
+                <div class="ai-input">
+                    <input type="text" id="ai-input" placeholder="Ask about availability, pricing...">
+                    <button id="ai-send"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- (Same as previous implementation) -->
+
+    <!-- Scripts -->
+    <script type="module">
+        import { 
+            getAvailableVehicles, 
+            getCompanyProfile,
+            getActiveBookings
+        } from './js/firebase-init.js';
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set current date
+            document.getElementById('current-date').textContent = 
+                new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            
+            // Load company info
+            const company = await getCompanyProfile();
+            if(company) {
+                document.getElementById('company-name').textContent = company.companyName;
+                document.getElementById('user-name').textContent = 
+                    company.adminName || "Admin";
+                document.getElementById('user-avatar').textContent = 
+                    (company.adminName || "Admin").substring(0, 2);
+            }
+            
+            // Load stats
+            await loadStats();
+            
+            // Load vehicles
+            await loadVehicles();
+            
+            // Load bookings
+            await loadBookings();
+            
+            // Setup navigation
+            setupNavigation();
+            
+            // Setup AI assistant
+            setupAIAssistant();
+        });
+        
+        async function loadStats() {
+            // In a real app, these would come from Firestore
+            const stats = [
+                { title: "Total Revenue", value: "$42,850", change: "12.5%", icon: "dollar-sign" },
+                { title: "Active Bookings", value: "18", change: "3 new", icon: "calendar-check" },
+                { title: "Available Vehicles", value: "24", change: "4 rented", icon: "car" },
+                { title: "Customer Satisfaction", value: "94%", change: "2% improvement", icon: "smile" }
+            ];
+            
+            const container = document.getElementById('stats-container');
+            container.innerHTML = '';
+            
+            stats.forEach(stat => {
+                container.innerHTML += `
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">${stat.title}</div>
+                        <div class="stat-icon bg-primary">
+                            <i class="fas fa-${stat.icon}"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-change">
+                        <i class="fas fa-arrow-up"></i> ${stat.change}
+                    </div>
+                </div>`;
+            });
+        }
+        
+        async function loadVehicles() {
+            const vehicles = await getAvailableVehicles();
+            const table = document.querySelector('#available-vehicles tbody');
+            table.innerHTML = '';
+            
+            vehicles.forEach(vehicle => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${vehicle.brand} ${vehicle.model}</td>
+                    <td>${vehicle.year}</td>
+                    <td>${vehicle.type || 'Luxury'}</td>
+                    <td>${vehicle.dailyRate} ${vehicle.currency || 'USD'}</td>
+                    <td><span class="status-badge status-${vehicle.status}">${vehicle.status}</span></td>
+                `;
+                table.appendChild(row);
+            });
+        }
+        
+        async function loadBookings() {
+            const bookings = await getActiveBookings();
+            const table = document.querySelector('#recent-bookings tbody');
+            table.innerHTML = '';
+            
+            bookings.forEach(booking => {
+                const start = new Date(booking.startDate).toLocaleDateString();
+                const end = new Date(booking.endDate).toLocaleDateString();
                 
-                function formatCurrency(amount) {
-                    return `Dhs ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                }
-
-                const companyProfileRef = db.collection('company_profile').doc('main');
-                companyProfileRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        const companyNameEl = document.getElementById('company-name-sidebar');
-                        const companyLogoEl = document.getElementById('company-logo-sidebar');
-                        if (data.companyName) {
-                            companyNameEl.textContent = data.companyName;
-                        }
-                        if (data.logoUrl) {
-                            companyLogoEl.src = data.logoUrl;
-                        } else {
-                            const initial = (data.companyName || 'R').charAt(0);
-                            companyLogoEl.src = `https://placehold.co/40x40/161B22/22D3EE?text=${initial}`;
-                        }
-                    }
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${booking.customerName}</td>
+                    <td>${booking.vehicleBrand} ${booking.vehicleModel}</td>
+                    <td>${start} - ${end}</td>
+                    <td><span class="status-badge status-${booking.status}">${booking.status}</span></td>
+                `;
+                table.appendChild(row);
+            });
+        }
+        
+        function setupNavigation() {
+            // Menu items
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.dataset.page;
+                    window.location.href = `/${page === 'dashboard' ? '' : page}.html`;
                 });
-
-                const now = new Date();
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-                db.collection('transactions').where('date', '>=', startOfMonth).where('date', '<=', endOfMonth).onSnapshot(snapshot => {
-                    let totalIncome = 0, totalExpense = 0;
-                    snapshot.forEach(doc => {
-                        const t = doc.data();
-                        if (t.type === 'income') totalIncome += t.amount;
-                        if (t.type === 'expense') totalExpense += t.amount;
+            });
+            
+            // Mobile menu toggle
+            document.querySelector('.menu-toggle').addEventListener('click', () => {
+                document.querySelector('.sidebar').classList.toggle('active');
+            });
+        }
+        
+        function setupAIAssistant() {
+            const aiInput = document.getElementById('ai-input');
+            const aiSend = document.getElementById('ai-send');
+            const aiMessages = document.getElementById('ai-messages');
+            
+            aiSend.addEventListener('click', sendMessage);
+            aiInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+            
+            async function sendMessage() {
+                const message = aiInput.value.trim();
+                if (!message) return;
+                
+                // Add user message
+                addMessage(message, 'user');
+                aiInput.value = '';
+                
+                try {
+                    // Show typing indicator
+                    const typingIndicator = document.createElement('div');
+                    typingIndicator.className = 'message bot';
+                    typingIndicator.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+                    aiMessages.appendChild(typingIndicator);
+                    aiMessages.scrollTop = aiMessages.scrollHeight;
+                    
+                    // Get AI response
+                    const response = await fetch('/api/ai-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message })
                     });
-                    const profit = totalIncome - totalExpense;
-                    document.getElementById('income-this-month').textContent = formatCurrency(totalIncome);
-                    document.getElementById('expense-this-month').textContent = formatCurrency(totalExpense);
-                    const profitEl = document.getElementById('profit-this-month');
-                    profitEl.textContent = formatCurrency(profit);
-                    profitEl.classList.toggle('text-red-400', profit < 0);
-                    profitEl.classList.toggle('text-green-400', profit >= 0);
-                });
-
-                db.collection('bookings').where('status', '==', 'pending').onSnapshot(snap => { document.getElementById('pending-bookings').textContent = snap.size; });
-                const threeDaysFromNow = new Date();
-                threeDaysFromNow.setDate(now.getDate() + 3);
-                db.collection('bookings').where('status', '==', 'rented').where('endDate', '>=', now).where('endDate', '<=', threeDaysFromNow).onSnapshot(snap => { document.getElementById('returning-soon').textContent = snap.size; });
-                db.collection('vehicles').where('status', '==', 'maintenance').onSnapshot(snap => { document.getElementById('in-maintenance').textContent = snap.size; });
-                document.getElementById('needs-service').textContent = 'N/A';
-
-                document.getElementById('menu-button').addEventListener('click', () => {
-                    document.getElementById('sidebar').classList.toggle('-translate-x-full');
-                });
-            }, 200);
+                    
+                    const { reply } = await response.json();
+                    
+                    // Remove typing indicator
+                    aiMessages.removeChild(typingIndicator);
+                    
+                    // Add AI response
+                    addMessage(reply, 'bot');
+                } catch (error) {
+                    addMessage("I'm having trouble connecting to the AI service. Please try again later.", 'bot');
+                    console.error('AI chat error:', error);
+                }
+            }
+            
+            function addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                messageDiv.innerHTML = `<p>${text}</p>`;
+                aiMessages.appendChild(messageDiv);
+                aiMessages.scrollTop = aiMessages.scrollHeight;
+            }
+        }
+    </script>
+    
+    <!-- Include other scripts -->
+    <script src="/js/data.js"></script>
+    <script src="/js/header-actions.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Initialize revenue chart
+        const ctx = document.getElementById('revenue-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Monthly Revenue (USD)',
+                    data: [32000, 37500, 41200, 39800, 42850, 46000],
+                    borderColor: '#4361ee',
+                    tension: 0.3,
+                    fill: true,
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Revenue Growth'
+                    }
+                }
+            }
         });
     </script>
 </body>

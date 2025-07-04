@@ -1,12 +1,13 @@
 {
-  "name": "rentalflow-ai-live",
-  "version": "2.0.0",
-  "description": "Complete Rental Management System",
+  "name": "rentalflow-ai",
+  "version": "1.0.0",
+  "description": "Luxury Car Rental Management System with AI",
   "main": "api/server.js",
   "scripts": {
     "start": "node api/server.js"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

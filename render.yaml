@@ -1,0 +1,16 @@
+# render.yaml
+services:
+  - type: web
+    name: rentalflow-ai
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: FIREBASE_CREDENTIALS
+        fromGroup: firebase_credentials
+      - key: TELEGRAM_BOT_TOKEN
+        fromGroup: telegram_token
+      - key: AI_API_KEY
+        fromGroup: ai_api_key
