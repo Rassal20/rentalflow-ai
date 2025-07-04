@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Details - RentalFlow AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0D1117;
+            --bg-secondary: #161B22;
+            --border-color: #30363D;
+            --text-primary: #E6EDF3;
+            --text-secondary: #8B949E;
+            --accent: #22D3EE;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); }
+        h1, h2, h3, .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+        .sidebar { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
+        .header { background-color: var(--bg-primary); border-bottom: 1px solid var(--border-color); }
+        .card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .modal-content { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .form-input { background-color: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); outline: none; }
+        .btn-primary { background-color: var(--accent); color: var(--bg-primary); font-weight: bold; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    </style>
+</head>
+<body class="text-gray-300">
+    <div class="flex h-screen">
+        <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
+             <div class="flex-grow">
+                <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
+                    <img id="company-logo-sidebar" src="https://placehold.co/40x40/161B22/30363D?text=..." alt="Logo" class="w-10 h-10 rounded-lg object-cover">
+                    <span id="company-name-sidebar" class="text-2xl font-bold font-rajdhani text-white">RentalFlow</span>
+                </a>
+                <nav class="space-y-2">
+                    <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
+                    <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
+                    <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-users w-6 text-cyan-400"></i><span class="ml-3">Customers</span></a>
+                    <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                    <a href="/financials.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-chart-line w-6"></i><span class="ml-3">Financials</span></a>
+                    <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
+                </nav>
+            </div>
+            <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a></div>
+        </div>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="header flex justify-between items-center p-6">
+                <div class="flex items-center">
+                    <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 id="customer-name-header" class="text-2xl font-bold text-white ml-4 md:ml-0">Customer Details</h1>
+                </div>
+                 <div>
+                    <button id="edit-customer-button" class="bg-cyan-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-cyan-700 transition"><i class="fas fa-edit mr-2"></i>Edit Customer</button>
+                    <a href="/customers.html" class="text-cyan-400 hover:underline ml-4"><i class="fas fa-arrow-left mr-2"></i>Back to Customers</a>
+                </div>
+            </header>
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+                <div id="loader" class="text-center p-10"><i class="fas fa-spinner fa-spin text-4xl text-cyan-400"></i></div>
+                <div id="customer-content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="card p-6 rounded-lg">
+                            <h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Profile</h3>
+                            <dl id="customer-profile-details" class="space-y-3 text-sm"></dl>
+                        </div>
+                         <div class="card p-6 rounded-lg">
+                            <h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Attached Documents</h3>
+                            <div id="documents-list" class="space-y-2"><p class="text-gray-500 text-sm">No documents uploaded.</p></div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                        <div class="card p-6 rounded-lg">
+                             <h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Booking History</h3>
+                             <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead><tr class="border-b border-gray-700"><th class="p-3 text-gray-400">Vehicle</th><th class="p-3 text-gray-400">Dates</th><th class="p-3 text-gray-400">Status</th></tr></thead>
+                                    <tbody id="booking-history-table"></tbody>
+                                </table>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="customer-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 hidden">
+        <div class="modal-content w-full max-w-3xl mx-auto rounded-lg shadow-lg z-50 max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700 sticky top-0 bg-gray-800/80 backdrop-blur-sm"><h3 id="modal-title" class="text-xl font-bold text-white">Edit Customer</h3><button id="close-modal-button" class="text-gray-400 hover:text-white">&times;</button></div>
+            <form id="customer-form" class="p-6 space-y-6">
+                <input type="hidden" id="customer-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div><label for="fullName" class="block text-sm text-gray-400">Full Name</label><input type="text" id="fullName" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
+                    <div><label for="email" class="block text-sm text-gray-400">Email Address</label><input type="email" id="email" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
+                    <div><label for="phone" class="block text-sm text-gray-400">Phone Number</label><div class="flex mt-1"><select id="phone-code" class="form-input rounded-l-md"></select><input type="tel" id="phone" class="form-input rounded-r-md w-full"></div></div>
+                    <div><label for="address" class="block text-sm text-gray-400">Address</label><input type="text" id="address" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="dob" class="block text-sm text-gray-400">Date of Birth</label><input type="date" id="dob" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                    <div><label for="nationality" class="block text-sm text-gray-400">Nationality</label><select id="nationality" class="form-input mt-1 block w-full p-2 rounded-md"></select></div>
+                </div>
+                <div><label for="notes" class="block text-sm text-gray-400">Notes</label><textarea id="notes" rows="3" class="form-input mt-1 block w-full p-2 rounded-md"></textarea></div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400">Upload More Documents</label>
+                    <input type="file" id="document-upload" multiple class="mt-1 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-500/10 file:text-cyan-400 hover:file:bg-cyan-500/20"/>
+                </div>
+                <div class="flex justify-end pt-4"><button type="button" id="cancel-button" class="bg-gray-700 text-white px-4 py-2 rounded-lg mr-2">Cancel</button><button type="submit" id="save-customer-button" class="btn-primary px-4 py-2 rounded-lg">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="/js/firebase-init.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (typeof db === 'undefined') {
+                    document.getElementById('loader').innerHTML = `<p class="text-red-500 font-bold">Error: Application services failed to load.</p>`;
+                    return;
+                }
+                const customerId = new URLSearchParams(window.location.search).get('id');
+                if (!customerId) {
+                    document.getElementById('loader').innerHTML = '<p class="text-red-500 font-bold">Error: No Customer ID provided.</p>';
+                    return;
+                }
+                initializeApp(customerId);
+            }, 200);
+
+            let currentCustomerData = {}; // Store customer data globally on this page
+
+            function initializeApp(customerId) {
+                const customerRef = db.collection('customers').doc(customerId);
+
+                // --- Load and Display Customer Data ---
+                customerRef.onSnapshot(doc => {
+                    if (!doc.exists) {
+                        document.getElementById('loader').innerHTML = '<p class="text-red-500 font-bold">Error: Customer not found.</p>';
+                        return;
+                    }
+                    currentCustomerData = { id: doc.id, ...doc.data() };
+                    renderCustomerDetails(currentCustomerData);
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('customer-content').classList.remove('hidden');
+                }, error => {
+                    console.error("Error fetching customer details:", error);
+                    document.getElementById('loader').innerHTML = '<p class="text-red-500 font-bold">Error loading customer data.</p>';
+                });
+
+                // --- Load Sidebar Company Info ---
+                const companyProfileRef = db.collection('company_profile').doc('main');
+                companyProfileRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
+                        if (data.logoUrl) document.getElementById('company-logo-sidebar').src = data.logoUrl;
+                    }
+                });
+
+                loadBookingHistory(customerId);
+                setupEditModal(customerRef);
+            }
+
+            function renderCustomerDetails(customer) {
+                document.getElementById('customer-name-header').textContent = `Details for ${customer.fullName}`;
+                const detailsContainer = document.getElementById('customer-profile-details');
+                detailsContainer.innerHTML = `
+                    <div><dt class="text-gray-400">Email</dt><dd class="text-white">${customer.email || 'N/A'}</dd></div>
+                    <div><dt class="text-gray-400">Phone</dt><dd class="text-white">${customer.phoneCode || ''} ${customer.phone || 'N/A'}</dd></div>
+                    <div><dt class="text-gray-400">Address</dt><dd class="text-white">${customer.address || 'N/A'}</dd></div>
+                    <div><dt class="text-gray-400">Date of Birth</dt><dd class="text-white">${customer.dob || 'N/A'}</dd></div>
+                    <div><dt class="text-gray-400">Nationality</dt><dd class="text-white">${customer.nationality || 'N/A'}</dd></div>
+                    <div><dt class="text-gray-400">Notes</dt><dd class="text-white whitespace-pre-wrap">${customer.notes || 'N/A'}</dd></div>
+                `;
+                const docsContainer = document.getElementById('documents-list');
+                if (customer.documents && customer.documents.length > 0) {
+                    docsContainer.innerHTML = customer.documents.map(d => 
+                        `<a href="${d.url}" target="_blank" class="flex items-center p-2 bg-gray-800 rounded-md hover:bg-gray-700 transition">
+                            <i class="fas fa-file-alt text-cyan-400 mr-3"></i>
+                            <span class="truncate">${d.name}</span>
+                        </a>`
+                    ).join('');
+                } else {
+                    docsContainer.innerHTML = '<p class="text-gray-500 text-sm">No documents uploaded.</p>';
+                }
+            }
+
+            function loadBookingHistory(customerId) {
+                const historyTable = document.getElementById('booking-history-table');
+                db.collection('bookings').where('customerId', '==', customerId).orderBy('startDate', 'desc').get().then(snapshot => {
+                    if(snapshot.empty) {
+                        historyTable.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500">No booking history found.</td></tr>`;
+                        return;
+                    }
+                    historyTable.innerHTML = snapshot.docs.map(doc => {
+                        const b = doc.data();
+                        const startDate = b.startDate ? new Date(b.startDate.seconds * 1000).toLocaleDateString() : 'N/A';
+                        const endDate = b.endDate ? new Date(b.endDate.seconds * 1000).toLocaleDateString() : 'N/A';
+                        return `
+                            <tr class="border-b border-gray-700 hover:bg-gray-800">
+                                <td class="p-3">${b.vehicleName || 'N/A'}</td>
+                                <td class="p-3">${startDate} - ${endDate}</td>
+                                <td class="p-3 capitalize">${b.status || 'N/A'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                });
+            }
+
+            function setupEditModal(customerRef) {
+                const customerModal = document.getElementById('customer-modal');
+                const customerForm = document.getElementById('customer-form');
+                const saveButton = document.getElementById('save-customer-button');
+                let filesToUpload = [];
+
+                // Populate Nationality and Phone Code dropdowns
+                fetch('https://restcountries.com/v3.1/all').then(res => res.json()).then(countries => {
+                    const sortedCountries = countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+                    let countryOptions = '<option value="">Select Nationality</option>';
+                    let phoneOptions = '<option value="">Code</option>';
+                    sortedCountries.forEach(country => {
+                        const name = country.name.common;
+                        countryOptions += `<option value="${name}">${country.flag || ''} ${name}</option>`;
+                        if (country.idd.root) {
+                            const code = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
+                            phoneOptions += `<option value="${code}">${country.flag || ''} ${code}</option>`;
+                        }
+                    });
+                    document.getElementById('nationality').innerHTML = countryOptions;
+                    document.getElementById('phone-code').innerHTML = phoneOptions;
+                });
+                
+                const openModal = () => {
+                    customerForm.reset();
+                    document.getElementById('customer-id').value = currentCustomerData.id;
+                    document.getElementById('fullName').value = currentCustomerData.fullName || '';
+                    document.getElementById('email').value = currentCustomerData.email || '';
+                    document.getElementById('phone').value = currentCustomerData.phone || '';
+                    document.getElementById('phone-code').value = currentCustomerData.phoneCode || '';
+                    document.getElementById('address').value = currentCustomerData.address || '';
+                    document.getElementById('dob').value = currentCustomerData.dob || '';
+                    document.getElementById('nationality').value = currentCustomerData.nationality || '';
+                    document.getElementById('notes').value = currentCustomerData.notes || '';
+                    customerModal.classList.remove('hidden');
+                };
+                const closeModal = () => customerModal.classList.add('hidden');
+
+                document.getElementById('edit-customer-button').addEventListener('click', openModal);
+                document.getElementById('close-modal-button').addEventListener('click', closeModal);
+                document.getElementById('cancel-button').addEventListener('click', closeModal);
+                document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
+
+                document.getElementById('document-upload').addEventListener('change', (e) => {
+                    filesToUpload = Array.from(e.target.files);
+                });
+
+                customerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    saveButton.disabled = true;
+                    saveButton.textContent = 'Saving...';
+                    const data = {
+                        fullName: document.getElementById('fullName').value, email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value, phoneCode: document.getElementById('phone-code').value,
+                        address: document.getElementById('address').value, dob: document.getElementById('dob').value,
+                        nationality: document.getElementById('nationality').value, notes: document.getElementById('notes').value,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    try {
+                        await customerRef.update(data);
+                        if (filesToUpload.length > 0) {
+                             const uploadPromises = filesToUpload.map(file => {
+                                const filePath = `customer_documents/${customerRef.id}/${Date.now()}_${file.name}`;
+                                return storage.ref(filePath).put(file).then(snapshot => 
+                                    snapshot.ref.getDownloadURL().then(url => ({ name: file.name, url }))
+                                );
+                            });
+                            const newDocs = await Promise.all(uploadPromises);
+                            await customerRef.update({ documents: firebase.firestore.FieldValue.arrayUnion(...newDocs) });
+                        }
+                        closeModal();
+                    } catch (error) {
+                        console.error("Error saving customer:", error);
+                    } finally {
+                        saveButton.disabled = false;
+                        saveButton.textContent = 'Save Changes';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
