@@ -1,53 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehicle Details - RentalFlow AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Libraries for PDF and Excel Export -->
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0D1117;
+            --bg-secondary: #161B22;
+            --border-color: #30363D;
+            --text-primary: #E6EDF3;
+            --text-secondary: #8B949E;
+            --accent: #22D3EE;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); }
+        h1, h2, h3, .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+        .sidebar { background-color: var(--bg-secondary); border-right: 1px solid var(--border-color); }
+        .header { background-color: var(--bg-primary); border-bottom: 1px solid var(--border-color); }
+        .card { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .modal-content { background-color: var(--bg-secondary); border: 1px solid var(--border-color); }
+        .form-input { background-color: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); outline: none; }
+        .btn-primary { background-color: var(--accent); color: var(--bg-primary); font-weight: bold; }
+        .btn-secondary { background-color: #374151; color: var(--text-primary); }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <div class="flex h-screen bg-gray-200">
+<body class="text-gray-300">
+    <div class="flex h-screen">
         <!-- Sidebar -->
-        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
-            <div>
-                <a href="/dashboard.html" class="flex items-center space-x-3"><img src="https://placehold.co/40x40/ffffff/1a202c?text=RF" alt="Logo" class="w-10 h-10 rounded-full"><span class="text-2xl font-bold">RentalFlow</span></a>
-                <nav class="space-y-2 mt-10">
+        <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
+            <div class="flex-grow">
+                <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
+                    <img id="company-logo-sidebar" src="https://placehold.co/40x40/161B22/30363D?text=..." alt="Logo" class="w-10 h-10 rounded-lg object-cover">
+                    <span id="company-name-sidebar" class="text-2xl font-bold font-rajdhani text-white">RentalFlow</span>
+                </a>
+                <nav class="space-y-2">
                     <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
                     <a href="/bookings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-calendar-alt w-6"></i><span class="ml-3">Bookings</span></a>
                     <a href="/customers.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-users w-6"></i><span class="ml-3">Customers</span></a>
-                    <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-car w-6"></i><span class="ml-3">Vehicle Fleet</span></a>
+                    <a href="/fleet.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-car w-6 text-cyan-400"></i><span class="ml-3">Vehicle Fleet</span></a>
+                    <a href="/financials.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-chart-line w-6"></i><span class="ml-3">Financials</span></a>
                     <a href="/invoices.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-file-alt w-6"></i><span class="ml-3">Invoices</span></a>
                 </nav>
             </div>
-            <div class="mt-auto">
-                 <a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a>
-            </div>
+            <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a></div>
         </div>
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="flex justify-between items-center p-6 bg-white border-b">
+            <header class="header flex justify-between items-center p-6">
                 <div class="flex items-center">
-                    <button id="menu-button" class="text-gray-500 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
-                    <h1 id="vehicle-title" class="text-2xl font-semibold text-gray-800 ml-4 md:ml-0">Vehicle Details</h1>
+                    <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
+                    <h1 id="vehicle-title" class="text-2xl font-bold text-white ml-4 md:ml-0">Vehicle Details</h1>
                 </div>
                 <div>
                     <button id="log-maintenance-button" class="bg-orange-500 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-orange-600 transition"><i class="fas fa-tools mr-2"></i>Log Maintenance</button>
-                    <a href="/fleet.html" class="text-blue-600 hover:underline ml-4"><i class="fas fa-arrow-left mr-2"></i>Back to Fleet</a>
+                    <a href="/fleet.html" class="text-cyan-400 hover:underline ml-4"><i class="fas fa-arrow-left mr-2"></i>Back to Fleet</a>
                 </div>
             </header>
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-                <div id="loader" class="text-center p-10"><i class="fas fa-spinner fa-spin text-3xl text-gray-500"></i></div>
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+                <div id="loader" class="text-center p-10"><i class="fas fa-spinner fa-spin text-4xl text-cyan-400"></i></div>
                 <div id="vehicle-content" class="hidden">
                     <!-- Vehicle Header -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <div class="card p-6 rounded-lg mb-6">
                         <div class="flex flex-col md:flex-row md:items-center justify-between">
                             <div>
-                                <h2 id="vehicle-name" class="text-3xl font-bold text-gray-900"></h2>
-                                <p id="vehicle-plate" class="text-lg text-gray-500"></p>
+                                <h2 id="vehicle-name" class="text-3xl font-bold text-white"></h2>
+                                <p id="vehicle-plate" class="text-lg text-gray-400"></p>
                             </div>
                             <div id="vehicle-status" class="mt-4 md:mt-0 text-lg font-bold capitalize px-4 py-2 rounded-full text-center"></div>
                         </div>
@@ -55,12 +83,21 @@
                     <!-- Main Grid -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 space-y-6">
-                            <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Vehicle Details</h3><div id="details-grid" class="grid grid-cols-2 gap-4 text-sm"></div></div>
-                            <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Images</h3><div id="images-gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"><p class="text-gray-500">No images uploaded.</p></div></div>
+                            <div class="card p-6 rounded-lg"><h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Vehicle Details</h3><div id="details-grid" class="grid grid-cols-2 gap-4 text-sm"></div></div>
+                            <div class="card p-6 rounded-lg"><h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Images</h3><div id="images-gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"><p class="text-gray-500">No images uploaded.</p></div></div>
                         </div>
                         <div class="space-y-6">
-                             <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Booking History</h3><div id="booking-history" class="space-y-3"><p class="text-gray-500 text-sm">No bookings found.</p></div></div>
-                             <div class="bg-white p-6 rounded-lg shadow-md"><h3 class="text-xl font-semibold mb-4 border-b pb-2">Maintenance History</h3><div id="maintenance-history" class="space-y-3"><p class="text-gray-500 text-sm">No maintenance records.</p></div></div>
+                             <div class="card p-6 rounded-lg"><h3 class="text-xl font-semibold mb-4 border-b pb-2 border-gray-700 text-white">Booking History</h3><div id="booking-history" class="space-y-3"><p class="text-gray-500 text-sm">No bookings found.</p></div></div>
+                             <div class="card p-6 rounded-lg">
+                                <div class="flex justify-between items-center mb-4 border-b pb-2 border-gray-700">
+                                    <h3 class="text-xl font-semibold text-white">Maintenance History</h3>
+                                    <div class="flex items-center gap-2">
+                                        <button id="export-maint-pdf" class="text-xs btn-secondary px-2 py-1 rounded-md"><i class="fas fa-file-pdf"></i></button>
+                                        <button id="export-maint-excel" class="text-xs btn-secondary px-2 py-1 rounded-md"><i class="fas fa-file-excel"></i></button>
+                                    </div>
+                                </div>
+                                <div id="maintenance-history" class="space-y-3"><p class="text-gray-500 text-sm">No maintenance records.</p></div>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -69,28 +106,42 @@
     </div>
 
     <!-- Log Maintenance Modal -->
-    <div id="maintenance-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white w-full max-w-lg mx-auto rounded-lg shadow-lg z-50">
-            <div class="flex justify-between items-center p-4 border-b"><h3 class="text-xl font-semibold">Log Maintenance Event</h3><button id="close-maintenance-modal" class="text-gray-500 hover:text-gray-800">&times;</button></div>
+    <div id="maintenance-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 hidden">
+        <div class="modal-content w-full max-w-lg mx-auto rounded-lg shadow-lg z-50">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700"><h3 class="text-xl font-semibold text-white">Log Maintenance Event</h3><button id="close-maintenance-modal" class="text-gray-400 hover:text-white">&times;</button></div>
             <form id="maintenance-form" class="p-6 space-y-4">
-                <div><label for="maintenance-type" class="block text-sm">Type</label><select id="maintenance-type" class="mt-1 block w-full p-2 border rounded-md"><option>Oil Change</option><option>Tire Rotation</option><option>Brake Service</option><option>General Repair</option><option>Other</option></select></div>
-                <div><label for="maintenance-date" class="block text-sm">Date</label><input type="date" id="maintenance-date" class="mt-1 block w-full p-2 border rounded-md" required></div>
-                <div><label for="return-date" class="block text-sm">Expected Return Date</label><input type="date" id="return-date" class="mt-1 block w-full p-2 border rounded-md"></div>
-                <div><label for="maintenance-cost" class="block text-sm">Cost ($)</label><input type="number" step="0.01" id="maintenance-cost" class="mt-1 block w-full p-2 border rounded-md"></div>
-                <div><label for="maintenance-notes" class="block text-sm">Notes</label><textarea id="maintenance-notes" rows="3" class="mt-1 block w-full p-2 border rounded-md"></textarea></div>
-                <div class="flex justify-end pt-4"><button type="button" id="cancel-maintenance" class="bg-gray-200 px-4 py-2 rounded-lg mr-2">Cancel</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Save Event</button></div>
+                <div><label for="maintenance-type" class="block text-sm text-gray-400">Type</label><select id="maintenance-type" class="form-input mt-1 block w-full p-2 rounded-md"><option>Oil Change</option><option>Tire Rotation</option><option>Brake Service</option><option>General Repair</option><option>Other</option></select></div>
+                <div><label for="maintenance-date" class="block text-sm text-gray-400">Date</label><input type="date" id="maintenance-date" class="form-input mt-1 block w-full p-2 rounded-md" required></div>
+                <div><label for="return-date" class="block text-sm text-gray-400">Expected Return Date</label><input type="date" id="return-date" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                <div><label for="maintenance-cost" class="block text-sm text-gray-400">Cost (AED)</label><input type="number" step="0.01" id="maintenance-cost" class="form-input mt-1 block w-full p-2 rounded-md"></div>
+                <div><label for="maintenance-notes" class="block text-sm text-gray-400">Notes</label><textarea id="maintenance-notes" rows="3" class="form-input mt-1 block w-full p-2 rounded-md"></textarea></div>
+                <div class="flex justify-end pt-4"><button type="button" id="cancel-maintenance" class="bg-gray-700 text-white px-4 py-2 rounded-lg mr-2">Cancel</button><button type="submit" class="btn-primary px-4 py-2 rounded-lg">Save Event</button></div>
             </form>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const db = firebase.firestore();
-                if (!db) { console.error("DB not found"); return; }
+            const firebaseConfig = {
+                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
+                authDomain: "rentalflow-ai-app.firebaseapp.com",
+                projectId: "rentalflow-ai-app",
+                storageBucket: "rentalflow-ai-app.appspot.com",
+                messagingSenderId: "880755901556",
+                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
+            };
+            let db;
+            try {
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+                db = firebase.firestore();
+                initializeApp();
+            } catch (e) {
+                document.getElementById('loader').innerHTML = `<p class="text-red-500 font-bold">Error: Database connection failed.</p>`;
+            }
+
+            function initializeApp() {
                 const loader = document.getElementById('loader');
                 const vehicleContent = document.getElementById('vehicle-content');
                 const vehicleId = new URLSearchParams(window.location.search).get('id');
@@ -98,11 +149,21 @@
 
                 const vehicleRef = db.collection('vehicles').doc(vehicleId);
                 const maintenanceRef = db.collection('maintenance');
+                let currentMaintenanceData = [];
+                let vehicleNameForExport = '';
+
+                const companyProfileRef = db.collection('company_profile').doc('main');
+                companyProfileRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
+                        if (data.logoUrl) { document.getElementById('company-logo-sidebar').src = data.logoUrl; }
+                    }
+                });
 
                 // --- Maintenance Modal Logic ---
                 const maintenanceModal = document.getElementById('maintenance-modal');
-                const logMaintenanceButton = document.getElementById('log-maintenance-button');
-                logMaintenanceButton.addEventListener('click', () => maintenanceModal.classList.remove('hidden'));
+                document.getElementById('log-maintenance-button').addEventListener('click', () => maintenanceModal.classList.remove('hidden'));
                 document.getElementById('close-maintenance-modal').addEventListener('click', () => maintenanceModal.classList.add('hidden'));
                 document.getElementById('cancel-maintenance').addEventListener('click', () => maintenanceModal.classList.add('hidden'));
                 
@@ -121,11 +182,12 @@
                         vehicleRef.update({ status: 'maintenance' });
                         if (data.cost > 0) {
                             db.collection('transactions').add({
-                                description: `Maintenance for ${document.getElementById('vehicle-name').textContent}`,
+                                description: `Maintenance for ${vehicleNameForExport}`,
                                 type: 'expense', amount: data.cost, category: 'Maintenance', date: data.date
                             });
                         }
                         maintenanceModal.classList.add('hidden');
+                        document.getElementById('maintenance-form').reset();
                     }).catch(err => console.error("Error adding maintenance: ", err));
                 });
 
@@ -133,20 +195,21 @@
                 vehicleRef.onSnapshot(doc => {
                     if (!doc.exists) { loader.innerHTML = '<p class="text-red-500 font-bold">Error: Vehicle not found.</p>'; return; }
                     const vehicle = doc.data();
-                    document.getElementById('vehicle-title').textContent = `${vehicle.brand} ${vehicle.model}`;
-                    document.getElementById('vehicle-name').textContent = `${vehicle.brand} ${vehicle.model}`;
+                    vehicleNameForExport = `${vehicle.brand} ${vehicle.model}`;
+                    document.getElementById('vehicle-title').textContent = vehicleNameForExport;
+                    document.getElementById('vehicle-name').textContent = vehicleNameForExport;
                     document.getElementById('vehicle-plate').textContent = vehicle.plateNumber;
                     const statusEl = document.getElementById('vehicle-status');
                     statusEl.textContent = vehicle.status;
                     statusEl.className = 'mt-4 md:mt-0 text-lg font-bold capitalize px-4 py-2 rounded-full text-center ';
                     switch(vehicle.status) {
-                        case 'available': statusEl.classList.add('bg-green-100', 'text-green-800'); break;
-                        case 'rented': case 'booked': statusEl.classList.add('bg-yellow-100', 'text-yellow-800'); break;
-                        case 'maintenance': statusEl.classList.add('bg-red-100', 'text-red-800'); break;
-                        default: statusEl.classList.add('bg-gray-100', 'text-gray-800');
+                        case 'available': statusEl.classList.add('bg-green-500/20', 'text-green-400'); break;
+                        case 'rented': case 'booked': statusEl.classList.add('bg-yellow-500/20', 'text-yellow-400'); break;
+                        case 'maintenance': statusEl.classList.add('bg-red-500/20', 'text-red-400'); break;
+                        default: statusEl.classList.add('bg-gray-700', 'text-gray-300');
                     }
                     const detailsGrid = document.getElementById('details-grid');
-                    detailsGrid.innerHTML = `<div><strong class="block text-gray-500">Year</strong><span class="font-semibold">${vehicle.year || 'N/A'}</span></div><div><strong class="block text-gray-500">Color</strong><span class="font-semibold">${vehicle.color || 'N/A'}</span></div><div><strong class="block text-gray-500">Kilometers</strong><span class="font-semibold">${(vehicle.currentKM || 0).toLocaleString()}</span></div><div class="col-span-2"><strong class="block text-gray-500">Specs</strong><p class="font-semibold">${vehicle.specs || 'N/A'}</p></div><div class="col-span-2"><strong class="block text-gray-500">Description</strong><p class="font-semibold">${vehicle.description || 'N/A'}</p></div>`;
+                    detailsGrid.innerHTML = `<div><strong class="block text-gray-400">Year</strong><span class="font-semibold">${vehicle.year || 'N/A'}</span></div><div><strong class="block text-gray-400">Color</strong><span class="font-semibold">${vehicle.color || 'N/A'}</span></div><div><strong class="block text-gray-400">Kilometers</strong><span class="font-semibold">${(vehicle.currentKM || 0).toLocaleString()}</span></div><div class="col-span-2"><strong class="block text-gray-400">Specs</strong><p class="font-semibold">${vehicle.specs || 'N/A'}</p></div><div class="col-span-2"><strong class="block text-gray-400">Description</strong><p class="font-semibold">${vehicle.description || 'N/A'}</p></div>`;
                     const imagesGallery = document.getElementById('images-gallery');
                     if (vehicle.imageUrls && vehicle.imageUrls.length > 0) {
                         imagesGallery.innerHTML = vehicle.imageUrls.map(url => `<a href="${url}" target="_blank"><img src="${url}" class="w-full h-32 object-cover rounded-lg shadow-md hover:opacity-80 transition-opacity"></a>`).join('');
@@ -164,26 +227,59 @@
 
                 function loadBookingHistory(vId) {
                     const historyContainer = document.getElementById('booking-history');
-                    db.collection('bookings').where('vehicleId', '==', vId).orderBy('startDate', 'desc').get().then(snapshot => {
+                    db.collection('bookings').where('vehicleId', '==', vId).orderBy('startDate', 'desc').limit(10).get().then(snapshot => {
                         if (snapshot.empty) { historyContainer.innerHTML = '<p class="text-gray-500 text-sm">No bookings found.</p>'; return; }
                         historyContainer.innerHTML = snapshot.docs.map(doc => {
                             const b = doc.data();
-                            return `<div class="text-sm p-2 bg-gray-50 rounded-md"><p class="font-semibold">${b.customerName}</p><p class="text-gray-600">${new Date(b.startDate.seconds * 1000).toLocaleDateString()}</p></div>`;
+                            return `<div class="text-sm p-3 bg-gray-800 rounded-md"><p class="font-semibold text-white">${b.customerName}</p><p class="text-gray-400">${new Date(b.startDate.seconds * 1000).toLocaleDateString()}</p></div>`;
                         }).join('');
                     });
                 }
                 function loadMaintenanceHistory(vId) {
                      const historyContainer = document.getElementById('maintenance-history');
                      maintenanceRef.where('vehicleId', '==', vId).orderBy('date', 'desc').onSnapshot(snapshot => {
+                        currentMaintenanceData = snapshot.docs.map(doc => doc.data());
                         if (snapshot.empty) { historyContainer.innerHTML = '<p class="text-gray-500 text-sm">No maintenance records.</p>'; return; }
-                        historyContainer.innerHTML = snapshot.docs.map(doc => {
-                            const r = doc.data();
-                            return `<div class="text-sm p-2 bg-gray-50 rounded-md"><p class="font-semibold">${r.type || 'General'}</p><p class="text-gray-600">${new Date(r.date.seconds * 1000).toLocaleDateString()} - $${r.cost.toFixed(2)}</p><p class="text-xs text-gray-500">${r.notes || ''}</p></div>`;
+                        historyContainer.innerHTML = currentMaintenanceData.map(r => {
+                            return `<div class="text-sm p-3 bg-gray-800 rounded-md"><p class="font-semibold text-white">${r.type || 'General'}</p><p class="text-gray-400">${new Date(r.date.seconds * 1000).toLocaleDateString()} - AED ${r.cost.toFixed(2)}</p><p class="text-xs text-gray-500">${r.notes || ''}</p></div>`;
                         }).join('');
                     });
                 }
+
+                const exportMaintenanceToPDF = () => {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    doc.text(`Maintenance Report for ${vehicleNameForExport}`, 14, 16);
+                    doc.autoTable({
+                        head: [['Date', 'Type', 'Cost (AED)', 'Notes']],
+                        body: currentMaintenanceData.map(r => [
+                            new Date(r.date.seconds * 1000).toLocaleDateString(),
+                            r.type,
+                            r.cost.toFixed(2),
+                            r.notes || ''
+                        ]),
+                        startY: 20,
+                    });
+                    doc.save(`maintenance-${vehicleId}.pdf`);
+                };
+
+                const exportMaintenanceToExcel = () => {
+                    const worksheetData = currentMaintenanceData.map(r => ({
+                        Date: new Date(r.date.seconds * 1000).toLocaleDateString(),
+                        Type: r.type,
+                        'Cost (AED)': r.cost,
+                        Notes: r.notes || ''
+                    }));
+                    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Maintenance");
+                    XLSX.writeFile(workbook, `maintenance-${vehicleId}.xlsx`);
+                };
+
+                document.getElementById('export-maint-pdf').addEventListener('click', exportMaintenanceToPDF);
+                document.getElementById('export-maint-excel').addEventListener('click', exportMaintenanceToExcel);
                 document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
-            }, 200);
+            }
         });
     </script>
 </body>

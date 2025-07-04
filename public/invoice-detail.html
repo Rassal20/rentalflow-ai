@@ -29,9 +29,11 @@
             body { background-color: white; color: black; }
             .no-print { display: none !important; }
             .a4-container { margin: 0; padding: 0; box-shadow: none !important; border: none !important; }
+            .print-bg-white { background-color: white !important; }
             .print-text-black { color: black !important; }
             .print-text-gray { color: #555 !important; }
             .print-bg-gray { background-color: #f3f4f6 !important; }
+            .print-border-gray { border-color: #e5e7eb !important; }
         }
     </style>
 </head>
@@ -50,7 +52,7 @@
             </div>
         </div>
         <div class="flex justify-center p-4">
-            <div id="invoice-box" class="a4-container bg-[--bg-secondary] shadow-lg p-12 print:p-0">
+            <div id="invoice-box" class="a4-container bg-[--bg-secondary] shadow-lg p-12 print-bg-white">
                  <!-- JS will populate this -->
             </div>
         </div>
@@ -73,7 +75,7 @@
                 db = firebase.firestore();
                 initializeApp();
             } catch (e) {
-                document.getElementById('loader').innerHTML = `<p class="text-red-500 text-center font-bold">Error: Database connection failed.</p>`;
+                document.getElementById('loader').innerHTML = `<p class="text-red-500 font-bold">Error: Database connection failed.</p>`;
             }
 
             async function initializeApp() {
@@ -106,64 +108,77 @@
                 const financials = invoice.financials || {};
                 const symbol = financials.currencySymbol || '$';
 
-                const itemsHtml = invoice.items.map((item, index) => `
+                // Create a combined list of items for the table
+                const allItems = [];
+                if (financials.rentalRate) {
+                    allItems.push({ description: financials.rentalRate.description, amount: financials.rentalRate.total });
+                }
+                if (financials.categorizedCharges) {
+                    financials.categorizedCharges.forEach(item => {
+                        allItems.push({ description: item.description || item.category, amount: item.amount });
+                    });
+                }
+
+                const itemsHtml = allItems.map((item, index) => `
                     <tr class="border-b border-[--border-color] print:border-gray-200">
-                        <td class="py-3 pr-3" contenteditable="true" data-item-index="${index}" data-field="description">${item.description}</td>
-                        <td class="py-3 pl-3 text-right" contenteditable="true" data-item-index="${index}" data-field="total">${item.total.toFixed(2)}</td>
+                        <td class="py-2 pr-3" contenteditable="true" data-item-index="${index}" data-field="description">${item.description}</td>
+                        <td class="py-2 pl-3 text-right" contenteditable="true" data-item-index="${index}" data-field="amount">${item.amount.toFixed(2)}</td>
                     </tr>`).join('');
 
                 const paymentMethodOptions = ["Card", "Cash", "Bank Transfer", "Crypto (USDT)"].map(p => `<option value="${p}" ${invoice.paymentMethod === p ? 'selected' : ''}>${p}</option>`).join('');
+                const bankDetails = company.bankDetails || {};
 
                 const invoiceHtml = `
                     <div class="flex justify-between items-start pb-8 border-b border-[--border-color] print:border-gray-200">
                         <div>
-                            <h2 class="text-2xl font-bold text-white print-text-black">${company.name || 'Your Company'}</h2>
+                            <h2 class="text-3xl font-bold text-white print-text-black">${company.name || 'Your Company'}</h2>
                             <p class="text-[--text-secondary] print-text-gray">${company.address || ''}</p>
                             <p class="text-[--text-secondary] print-text-gray">${company.email || ''} | ${company.phone || ''}</p>
                             <p class="text-[--text-secondary] print-text-gray">TRN: ${company.taxNumber || 'N/A'}</p>
                         </div>
                         <div class="text-right">
-                            <h1 class="text-4xl font-bold uppercase text-white print-text-black">Invoice</h1>
-                            <p class="text-[--text-secondary] print-text-gray"># ${invoice.invoiceNumber}</p>
+                            <h1 class="text-4xl font-bold uppercase text-white print-text-black">Tax Invoice</h1>
+                            <p class="text-[--text-secondary] print-text-gray">Invoice: ${invoice.invoiceNumber}</p>
+                            <p class="text-[--text-secondary] print-text-gray">Date: ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}</p>
+                            <p class="text-[--text-secondary] print-text-gray">Currency: ${financials.currency || 'AED'}</p>
                         </div>
                     </div>
-                    <div class="flex justify-between items-start py-8">
-                        <div>
-                            <h3 class="font-semibold text-gray-400 print-text-gray mb-1">Bill To</h3>
-                            <p class="font-bold text-white print-text-black">${customer.name}</p>
-                            <p class="text-[--text-secondary] print-text-gray">Nationality: ${customer.nationality || 'N/A'}</p>
-                            <p class="text-[--text-secondary] print-text-gray">DOB: ${customer.dob || 'N/A'}</p>
-                            <p class="text-[--text-secondary] print-text-gray">${customer.address || ''}</p>
-                            <p class="text-[--text-secondary] print-text-gray">${customer.email || ''}</p>
-                        </div>
-                        <div class="text-right text-[--text-secondary] print-text-gray">
-                            <p><strong class="text-gray-400 print-text-gray">Issue Date:</strong> ${new Date(invoice.issueDate.seconds * 1000).toLocaleDateString()}</p>
-                            <p><strong class="text-gray-400 print-text-gray">Due Date:</strong> ${new Date(invoice.dueDate.seconds * 1000).toLocaleDateString()}</p>
-                        </div>
+                    <div class="py-8">
+                        <h3 class="font-semibold text-gray-400 print-text-gray mb-1">Invoice To</h3>
+                        <p class="font-bold text-white print-text-black">${customer.name}</p>
+                        <p class="text-[--text-secondary] print-text-gray">Address: ${customer.address || 'N/A'}, Nationality: ${customer.nationality || 'N/A'}, Mobile: ${customer.phone || 'N/A'}</p>
                     </div>
                     <table class="w-full text-left mb-8 text-white print-text-black">
-                        <thead><tr class="bg-gray-800 print-bg-gray"><th class="p-3 font-semibold">Description</th><th class="p-3 font-semibold text-right">Amount (${symbol})</th></tr></thead>
+                        <thead><tr class="bg-gray-800 print-bg-gray"><th class="p-3 font-semibold">Description</th><th class="p-3 font-semibold text-right">Amount</th></tr></thead>
                         <tbody id="invoice-items-body">${itemsHtml}</tbody>
                     </table>
-                    <div class="flex justify-between items-end">
-                        <div class="w-1/2">
-                            <h3 class="font-semibold text-gray-400 print-text-gray mb-2">Payment Status</h3>
-                            <div class="flex items-center gap-4">
-                                <select id="status-select" class="form-input p-2 rounded-md">
-                                    <option value="unpaid" ${invoice.status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
-                                    <option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>Paid</option>
-                                </select>
-                                <select id="payment-method-select" class="form-input p-2 rounded-md ${invoice.status !== 'paid' ? 'hidden' : ''}">
-                                    <option value="">Select Method</option>
-                                    ${paymentMethodOptions}
-                                </select>
+                    <div class="flex justify-end mb-8">
+                        <table class="w-full max-w-sm text-[--text-secondary] print-text-gray">
+                            <tbody>
+                                <tr><td class="py-1 pr-4">Total Before Tax</td><td class="py-1 text-right font-semibold text-white print-text-black">${symbol} ${(financials.totalBeforeTax || financials.subtotal).toFixed(2)}</td></tr>
+                                <tr><td class="py-1 pr-4">Discount</td><td class="py-1 text-right font-semibold text-white print-text-black">${symbol} ${(financials.discount || 0).toFixed(2)}</td></tr>
+                                <tr><td class="py-1 pr-4">VAT (${(financials.tax.rate * 100).toFixed(0)}%)</td><td class="py-1 text-right font-semibold text-white print-text-black">${symbol} ${financials.tax.amount.toFixed(2)}</td></tr>
+                                <tr class="font-bold text-lg text-white print-text-black border-t-2 border-[--border-color] print:border-gray-400"><td class="pt-2 pr-4">Balance After Tax</td><td class="pt-2 text-right">${symbol} ${financials.total.toFixed(2)}</td></tr>
+                                <tr class="font-bold text-lg text-cyan-400 print-text-black"><td class="pt-1 pr-4">Total (AED)</td><td class="pt-1 text-right">Dhs ${financials.totalAED.toFixed(2)}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="border-t border-[--border-color] print:border-gray-200 pt-8">
+                        <div class="grid grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="font-semibold text-gray-400 print-text-gray mb-2">Payment Details</h3>
+                                <p class="text-sm"><strong>Account Holder:</strong> ${bankDetails.accountHolder || 'N/A'}</p>
+                                <p class="text-sm"><strong>Bank:</strong> ${bankDetails.bankName || 'N/A'}</p>
+                                <p class="text-sm"><strong>Account Number:</strong> ${bankDetails.accountNumber || 'N/A'}</p>
+                                <p class="text-sm"><strong>IBAN:</strong> ${bankDetails.iban || 'N/A'}</p>
                             </div>
-                        </div>
-                        <div class="w-full max-w-xs space-y-2 text-[--text-secondary] print-text-gray">
-                            <div class="flex justify-between"><span>Subtotal (${symbol})</span><span id="subtotal-display">${financials.subtotal.toFixed(2)}</span></div>
-                            <div class="flex justify-between"><span>VAT (${(financials.tax.rate * 100).toFixed(0)}%)</span><span id="tax-display">${financials.tax.amount.toFixed(2)}</span></div>
-                            <div class="flex justify-between font-bold text-xl mt-2 pt-2 border-t border-[--border-color] print:border-gray-200 text-white print-text-black"><span>Total (${symbol})</span><span id="total-display">${financials.total.toFixed(2)}</span></div>
-                            <div class="flex justify-between font-semibold text-lg mt-1 text-cyan-400"><span>Total (AED)</span><span>Dhs ${financials.totalAED.toFixed(2)}</span></div>
+                            <div class="no-print">
+                                <h3 class="font-semibold text-gray-400 mb-2">Update Payment Status</h3>
+                                <div class="flex items-center gap-4">
+                                    <select id="status-select" class="form-input p-2 rounded-md"><option value="unpaid" ${invoice.status === 'unpaid' ? 'selected' : ''}>Unpaid</option><option value="paid" ${invoice.status === 'paid' ? 'selected' : ''}>Paid</option></select>
+                                    <select id="payment-method-select" class="form-input p-2 rounded-md ${invoice.status !== 'paid' ? 'hidden' : ''}"><option value="">Select Method</option>${paymentMethodOptions}</select>
+                                </div>
+                            </div>
                         </div>
                     </div>`;
                 invoiceBox.innerHTML = invoiceHtml;
@@ -176,23 +191,15 @@
                 const saveButton = document.getElementById('save-changes-button');
                 saveButton.disabled = true;
                 saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-
                 const items = [];
                 document.querySelectorAll('#invoice-items-body tr').forEach(row => {
                     const description = row.querySelector('[data-field="description"]').textContent;
-                    const total = parseFloat(row.querySelector('[data-field="total"]').textContent);
+                    const total = parseFloat(row.querySelector('[data-field="amount"]').textContent);
                     items.push({ description, total });
                 });
-
                 const status = document.getElementById('status-select').value;
                 const paymentMethod = status === 'paid' ? document.getElementById('payment-method-select').value : null;
-
-                const updatedData = {
-                    items: items,
-                    status: status,
-                    paymentMethod: paymentMethod
-                };
-
+                const updatedData = { items, status, paymentMethod };
                 try {
                     await invoiceRef.update(updatedData);
                     alert('Invoice updated successfully!');

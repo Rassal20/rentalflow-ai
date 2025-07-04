@@ -30,6 +30,7 @@
 </head>
 <body class="text-gray-300">
     <div class="flex h-screen">
+        <!-- Sidebar -->
         <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
             <div class="flex-grow">
                 <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
@@ -47,6 +48,7 @@
             </div>
             <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg bg-gray-700 text-white"><i class="fas fa-cog w-6 text-cyan-400"></i><span class="ml-3">Settings</span></a></div>
         </div>
+        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="header flex justify-between items-center p-6">
                 <div class="flex items-center">
@@ -61,6 +63,7 @@
                         <span class="block sm:inline">Settings have been updated.</span>
                     </div>
                     <form id="settings-form" class="space-y-8">
+                        <!-- Company Profile Card -->
                         <div class="card p-8 rounded-lg">
                             <h3 class="text-xl font-bold text-white mb-6">Company Profile</h3>
                             <div class="space-y-6">
@@ -70,14 +73,14 @@
                                 <div><label for="address" class="block text-sm font-medium text-gray-400">Company Address</label><textarea id="address" rows="3" class="form-input mt-1 block w-full p-3 rounded-md" placeholder="123 Business Bay, Dubai, UAE"></textarea></div>
                             </div>
                         </div>
+                        <!-- Bank Details Card -->
                         <div class="card p-8 rounded-lg">
-                            <h3 class="text-xl font-bold text-white mb-6">Currency Exchange Rates (1 Unit to AED)</h3>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
-                                <div><label for="rate-USD" class="block text-sm text-gray-400">USD to AED</label><input type="number" step="any" id="rate-USD" class="form-input mt-1 w-full p-3 rounded-md" placeholder="e.g., 3.67"></div>
-                                <div><label for="rate-EUR" class="block text-sm text-gray-400">EUR to AED</label><input type="number" step="any" id="rate-EUR" class="form-input mt-1 w-full p-3 rounded-md" placeholder="e.g., 4.00"></div>
-                                <div><label for="rate-GBP" class="block text-sm text-gray-400">GBP to AED</label><input type="number" step="any" id="rate-GBP" class="form-input mt-1 w-full p-3 rounded-md" placeholder="e.g., 4.50"></div>
-                                <div><label for="rate-SAR" class="block text-sm text-gray-400">SAR to AED</label><input type="number" step="any" id="rate-SAR" class="form-input mt-1 w-full p-3 rounded-md" placeholder="e.g., 0.98"></div>
-                                <div><label for="rate-USDT" class="block text-sm text-gray-400">USDT to AED</label><input type="number" step="any" id="rate-USDT" class="form-input mt-1 w-full p-3 rounded-md" placeholder="e.g., 3.67"></div>
+                            <h3 class="text-xl font-bold text-white mb-6">Bank Details (for Invoices)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><label for="bankName" class="block text-sm text-gray-400">Bank Name</label><input type="text" id="bankName" class="form-input mt-1 w-full p-3 rounded-md" placeholder="e.g., Abu Dhabi Islamic Bank"></div>
+                                <div><label for="accountHolder" class="block text-sm text-gray-400">Account Holder Name</label><input type="text" id="accountHolder" class="form-input mt-1 w-full p-3 rounded-md"></div>
+                                <div><label for="accountNumber" class="block text-sm text-gray-400">Account Number</label><input type="text" id="accountNumber" class="form-input mt-1 w-full p-3 rounded-md"></div>
+                                <div><label for="iban" class="block text-sm text-gray-400">IBAN</label><input type="text" id="iban" class="form-input mt-1 w-full p-3 rounded-md"></div>
                             </div>
                         </div>
                         <div class="flex justify-end pt-4"><button type="submit" id="save-settings-button" class="btn-primary px-6 py-3 rounded-lg hover:scale-105 transition-transform">Save All Settings</button></div>
@@ -113,8 +116,7 @@
                     if (doc.exists) {
                         const data = doc.data();
                         document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
-                        const logoEl = document.getElementById('company-logo-sidebar');
-                        if (data.logoUrl) { logoEl.src = data.logoUrl; }
+                        if (data.logoUrl) { document.getElementById('company-logo-sidebar').src = data.logoUrl; }
                     }
                 });
 
@@ -132,12 +134,11 @@
                         document.getElementById('taxNumber').value = data.taxNumber || '';
                         document.getElementById('address').value = data.address || '';
                         if (data.logoUrl) { logoPreview.src = data.logoUrl; }
-                        if (data.currencyRates) {
-                            document.getElementById('rate-USD').value = data.currencyRates.USD || '';
-                            document.getElementById('rate-EUR').value = data.currencyRates.EUR || '';
-                            document.getElementById('rate-GBP').value = data.currencyRates.GBP || '';
-                            document.getElementById('rate-SAR').value = data.currencyRates.SAR || '';
-                            document.getElementById('rate-USDT').value = data.currencyRates.USDT || '';
+                        if (data.bankDetails) {
+                            document.getElementById('bankName').value = data.bankDetails.bankName || '';
+                            document.getElementById('accountHolder').value = data.bankDetails.accountHolder || '';
+                            document.getElementById('accountNumber').value = data.bankDetails.accountNumber || '';
+                            document.getElementById('iban').value = data.bankDetails.iban || '';
                         }
                     }
                 });
@@ -160,12 +161,11 @@
                         companyName: document.getElementById('companyName').value,
                         taxNumber: document.getElementById('taxNumber').value,
                         address: document.getElementById('address').value,
-                        currencyRates: {
-                            USD: Number(document.getElementById('rate-USD').value) || 0,
-                            EUR: Number(document.getElementById('rate-EUR').value) || 0,
-                            GBP: Number(document.getElementById('rate-GBP').value) || 0,
-                            SAR: Number(document.getElementById('rate-SAR').value) || 0,
-                            USDT: Number(document.getElementById('rate-USDT').value) || 0,
+                        bankDetails: {
+                            bankName: document.getElementById('bankName').value,
+                            accountHolder: document.getElementById('accountHolder').value,
+                            accountNumber: document.getElementById('accountNumber').value,
+                            iban: document.getElementById('iban').value,
                         }
                     };
                     try {

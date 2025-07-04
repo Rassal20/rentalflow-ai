@@ -9,8 +9,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-    <!-- ApexCharts Library for Charts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.js"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-primary: #0D1117;
@@ -35,6 +37,7 @@
              box-shadow: 0 0 0 1px var(--accent);
              outline: none;
         }
+        .btn-secondary { background-color: #374151; color: var(--text-primary); }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
         /* Custom styles for ApexCharts dark theme */
         .apexcharts-tooltip.apexcharts-theme-dark {
@@ -45,12 +48,11 @@
 </head>
 <body class="text-gray-300">
     <div class="flex h-screen">
-        <!-- Sidebar -->
         <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-6 flex flex-col z-30 transform -translate-x-full md:relative md:translate-x-0 transition">
             <div class="flex-grow">
                 <a href="/dashboard.html" class="flex items-center space-x-3 mb-10">
-                    <i class="fas fa-rocket text-cyan-400 text-3xl"></i>
-                    <span class="text-2xl font-bold font-rajdhani text-white">RentalFlow</span>
+                    <img id="company-logo-sidebar" src="https://placehold.co/40x40/161B22/30363D?text=..." alt="Logo" class="w-10 h-10 rounded-lg object-cover">
+                    <span id="company-name-sidebar" class="text-2xl font-bold font-rajdhani text-white">RentalFlow</span>
                 </a>
                 <nav class="space-y-2">
                     <a href="/dashboard.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-tachometer-alt w-6"></i><span class="ml-3">Dashboard</span></a>
@@ -63,19 +65,21 @@
             </div>
             <div><a href="/settings.html" class="flex items-center py-2.5 px-4 rounded-lg hover:bg-gray-700"><i class="fas fa-cog w-6"></i><span class="ml-3">Settings</span></a></div>
         </div>
-        <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="header flex justify-between items-center p-6">
                 <div class="flex items-center">
                     <button id="menu-button" class="text-gray-400 focus:outline-none md:hidden"><i class="fas fa-bars text-2xl"></i></button>
                     <h1 class="text-2xl font-bold text-white ml-4 md:ml-0">Financials</h1>
                 </div>
+                <div class="flex items-center gap-4">
+                    <button id="export-pdf" class="btn-secondary flex items-center px-4 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-file-pdf mr-2"></i>Export PDF</button>
+                    <button id="export-excel" class="btn-secondary flex items-center px-4 py-2 rounded-lg transition-transform hover:scale-105"><i class="fas fa-file-excel mr-2"></i>Export Excel</button>
+                </div>
             </header>
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
-                <!-- Filters -->
                 <div class="card p-4 rounded-lg mb-6">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div><label for="date-range" class="text-sm font-medium text-gray-400">Date Range</label><select id="date-range" class="form-input mt-1 block w-full p-2 rounded-md"><option value="this_month">This Month</option><option value="today">Today</option><option value="this_week">This Week</option><option value="this_year">This Year</option><option value="custom">Custom</option></select></div>
+                        <div><label for="date-range" class="text-sm font-medium text-gray-400">Date Range</label><select id="date-range" class="form-input mt-1 block w-full p-2 rounded-md"><option value="this_month">This Month</option><option value="today">Today</option><option value="this_week">This Week</option><option value="this_year">This Year</option><option value="all_time">All Time</option><option value="custom">Custom</option></select></div>
                         <div id="custom-date-inputs" class="hidden md:col-span-2 grid grid-cols-2 gap-4">
                             <div><label for="from-date" class="text-sm text-gray-400">From</label><input type="date" id="from-date" class="form-input mt-1 block w-full p-2 rounded-md"></div>
                             <div><label for="to-date" class="text-sm text-gray-400">To</label><input type="date" id="to-date" class="form-input mt-1 block w-full p-2 rounded-md"></div>
@@ -83,18 +87,15 @@
                         <div><label for="type-filter" class="text-sm font-medium text-gray-400">Type</label><select id="type-filter" class="form-input mt-1 block w-full p-2 rounded-md"><option value="all">All</option><option value="income">Income</option><option value="expense">Expense</option></select></div>
                     </div>
                 </div>
-                <!-- Summary Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div class="card p-6 rounded-lg"><p class="text-sm text-gray-400">Total Income</p><p id="total-income" class="text-3xl font-bold text-green-400 mt-1">$0.00</p></div>
                     <div class="card p-6 rounded-lg"><p class="text-sm text-gray-400">Total Expense</p><p id="total-expense" class="text-3xl font-bold text-red-400 mt-1">$0.00</p></div>
                     <div class="card p-6 rounded-lg"><p class="text-sm text-gray-400">Net Profit/Loss</p><p id="net-profit" class="text-3xl font-bold text-white mt-1">$0.00</p></div>
                 </div>
-                <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
                     <div class="card lg:col-span-2 p-6 rounded-lg"><div id="pie-chart"></div></div>
                     <div class="card lg:col-span-3 p-6 rounded-lg"><div id="bar-chart"></div></div>
                 </div>
-                <!-- Transactions Table -->
                 <div class="card p-6 rounded-lg">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
@@ -108,12 +109,34 @@
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="/js/firebase-init.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const db = firebase.firestore();
-                if (!db) { return; }
+            const firebaseConfig = {
+                apiKey: "AIzaSyCPAoCQcLsSsQj9nS0UEuwcDrZmdyNq1xk",
+                authDomain: "rentalflow-ai-app.firebaseapp.com",
+                projectId: "rentalflow-ai-app",
+                storageBucket: "rentalflow-ai-app.appspot.com",
+                messagingSenderId: "880755901556",
+                appId: "1:880755901556:web:e86fb90fbdfb889094fd21"
+            };
+            let db;
+             try {
+                if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+                db = firebase.firestore();
+                initializeApp();
+            } catch (e) {
+                console.error("CRITICAL: Firebase initialization failed.", e);
+            }
+
+            function initializeApp() {
+                const companyProfileRef = db.collection('company_profile').doc('main');
+                companyProfileRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        document.getElementById('company-name-sidebar').textContent = data.companyName || 'RentalFlow';
+                        if (data.logoUrl) { document.getElementById('company-logo-sidebar').src = data.logoUrl; }
+                    }
+                });
 
                 const dateRangeSelect = document.getElementById('date-range');
                 const customDateInputs = document.getElementById('custom-date-inputs');
@@ -125,8 +148,67 @@
                 const transactionsRef = db.collection('transactions');
                 let pieChart = null;
                 let barChart = null;
+                let currentTransactionsData = [];
 
-                function getDates(range) { /* ... same as before ... */ }
+                const getDates = (range) => {
+                    const now = new Date();
+                    let start = new Date();
+                    let end = new Date();
+                    switch (range) {
+                        case 'today':
+                            start.setHours(0, 0, 0, 0);
+                            end.setHours(23, 59, 59, 999);
+                            break;
+                        case 'this_week':
+                            const firstDay = now.getDate() - now.getDay();
+                            start = new Date(now.setDate(firstDay));
+                            start.setHours(0,0,0,0);
+                            end = new Date(now.setDate(start.getDate() + 6));
+                            end.setHours(23,59,59,999);
+                            break;
+                        case 'this_month':
+                            start = new Date(now.getFullYear(), now.getMonth(), 1);
+                            end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                            break;
+                        case 'this_year':
+                            start = new Date(now.getFullYear(), 0, 1);
+                            end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+                            break;
+                    }
+                    return { start, end };
+                };
+                
+                const exportToPDF = () => {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    doc.text("Financials Report", 14, 16);
+                    doc.autoTable({
+                        head: [['Date', 'Description', 'Category', 'Type', 'Amount']],
+                        body: currentTransactionsData.map(t => [
+                            new Date(t.date.seconds * 1000).toLocaleDateString(),
+                            t.description,
+                            t.category,
+                            t.type,
+                            `${t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}`
+                        ]),
+                        startY: 20,
+                    });
+                    doc.save('financials-report.pdf');
+                };
+
+                const exportToExcel = () => {
+                    const worksheetData = currentTransactionsData.map(t => ({
+                        Date: new Date(t.date.seconds * 1000).toLocaleDateString(),
+                        Description: t.description,
+                        Category: t.category,
+                        Type: t.type,
+                        Amount: t.amount
+                    }));
+                    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Financials");
+                    XLSX.writeFile(workbook, "financials-report.xlsx");
+                };
 
                 function renderOrUpdateCharts(income, expense) {
                     const pieOptions = {
@@ -135,7 +217,7 @@
                         labels: ['Income', 'Expense'],
                         colors: ['#22c55e', '#ef4444'],
                         theme: { mode: 'dark' },
-                        legend: { position: 'bottom' },
+                        legend: { position: 'bottom', labels: { colors: '#E6EDF3' } },
                         responsive: [{ breakpoint: 480, options: { chart: { width: 200 }, legend: { position: 'bottom' } } }]
                     };
                     if (pieChart) {
@@ -173,7 +255,7 @@
                         grid: { borderColor: '#30363D' },
                         colors: ['#22c55e', '#ef4444'],
                         theme: { mode: 'dark' },
-                        legend: { position: 'top' },
+                        legend: { position: 'top', labels: { colors: '#E6EDF3' } },
                     };
 
                     if(barChart) {
@@ -187,14 +269,26 @@
                 function fetchAndRenderTransactions() {
                     let query = transactionsRef.orderBy('date', 'desc');
                     const range = dateRangeSelect.value;
-                    if (range !== 'custom') { /* ... date logic same as before ... */ } 
-                    else { /* ... custom date logic same as before ... */ }
                     const type = typeFilterSelect.value;
-                    if (type !== 'all') { query = query.where('type', '==', type); }
+                    
+                    if (range !== 'all_time' && range !== 'custom') {
+                        const { start, end } = getDates(range);
+                        query = query.where('date', '>=', start).where('date', '<=', end);
+                    } else if (range === 'custom') {
+                        const from = fromDateInput.value;
+                        const to = toDateInput.value;
+                        if (from) query = query.where('date', '>=', new Date(from));
+                        if (to) query = query.where('date', '<=', new Date(to));
+                    }
+                    
+                    if (type !== 'all') {
+                        query = query.where('type', '==', type);
+                    }
 
                     query.onSnapshot(snapshot => {
                         let totalIncome = 0, totalExpense = 0;
                         const allTransactions = snapshot.docs.map(doc => doc.data());
+                        currentTransactionsData = allTransactions; // Store for export
 
                         allTransactions.forEach(t => {
                             if (t.type === 'income') totalIncome += t.amount;
@@ -202,13 +296,14 @@
                         });
 
                         if (snapshot.empty) {
-                            transactionsTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-500">No transactions found.</td></tr>`;
+                            transactionsTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-500">No transactions found for the selected filters.</td></tr>`;
                         } else {
                             transactionsTableBody.innerHTML = allTransactions.map(t => {
                                 const isIncome = t.type === 'income';
-                                return `<tr class="border-b border-gray-700"><td class="p-4">${new Date(t.date.seconds * 1000).toLocaleDateString()}</td><td class="p-4">${t.description}</td><td class="p-4">${t.category}</td><td class="p-4"><span class="px-2 py-1 text-xs rounded-full ${isIncome ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${t.type}</span></td><td class="p-4 text-right font-medium ${isIncome ? 'text-green-400' : 'text-red-400'}">${isIncome ? '+' : '-'}$${t.amount.toFixed(2)}</td></tr>`;
+                                return `<tr class="border-b border-gray-700"><td class="p-4">${new Date(t.date.seconds * 1000).toLocaleDateString()}</td><td class="p-4">${t.description}</td><td class="p-4">${t.category}</td><td class="p-4"><span class="px-2 py-1 text-xs font-semibold rounded-full ${isIncome ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${t.type}</span></td><td class="p-4 text-right font-medium ${isIncome ? 'text-green-400' : 'text-red-400'}">${isIncome ? '+' : '-'}$${t.amount.toFixed(2)}</td></tr>`;
                             }).join('');
                         }
+                        
                         const profit = totalIncome - totalExpense;
                         document.getElementById('total-income').textContent = `$${totalIncome.toFixed(2)}`;
                         document.getElementById('total-expense').textContent = `$${totalExpense.toFixed(2)}`;
@@ -219,6 +314,9 @@
                         
                         renderOrUpdateCharts(totalIncome, totalExpense);
                         renderOrUpdateBarChart(allTransactions);
+                    }, err => {
+                        console.error("Error fetching transactions: ", err);
+                        transactionsTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-red-500">Error loading data. See console for details.</td></tr>`;
                     });
                 }
 
@@ -226,10 +324,14 @@
                     customDateInputs.classList.toggle('hidden', e.target.value !== 'custom');
                     fetchAndRenderTransactions();
                 });
+                
                 [fromDateInput, toDateInput, typeFilterSelect].forEach(el => el.addEventListener('change', fetchAndRenderTransactions));
-                fetchAndRenderTransactions();
+                document.getElementById('export-pdf').addEventListener('click', exportToPDF);
+                document.getElementById('export-excel').addEventListener('click', exportToExcel);
                 document.getElementById('menu-button').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('-translate-x-full'));
-            }, 200);
+
+                fetchAndRenderTransactions();
+            }
         });
     </script>
 </body>
