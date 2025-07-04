@@ -1,0 +1,129 @@
+<!--
+  Floating Action Button (FAB) Component
+  This component provides a consistent, quick-access menu for common actions across the application.
+  It is loaded dynamically by fab.js.
+-->
+<style>
+    /* Styling for the Floating Action Button.
+      These styles define the look, feel, and animations for the FAB and its menu.
+      It uses CSS variables defined in the main HTML pages to match the application's theme.
+    */
+    .fab-container {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 1000;
+        /* Ensures the button is above other content */
+    }
+
+    .fab-button {
+        width: 60px;
+        height: 60px;
+        background-color: var(--accent, #22D3EE);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--bg-primary, #0D1117);
+        font-size: 28px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+
+    .fab-button:hover {
+        transform: scale(1.1);
+        background-color: #1fe4ff;
+        /* Slightly lighter accent for hover effect */
+    }
+
+    .fab-menu {
+        position: absolute;
+        bottom: 75px;
+        /* Position above the main button */
+        right: 5px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 15px;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+        transform: translateY(10px);
+    }
+
+    .fab-container:hover .fab-menu {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .fab-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+    }
+
+    .fab-item-label {
+        background-color: var(--bg-secondary, #161B22);
+        color: var(--text-primary, #E6EDF3);
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    .fab-item:hover .fab-item-label {
+        opacity: 1;
+    }
+
+    .fab-item-icon {
+        width: 48px;
+        height: 48px;
+        background-color: var(--bg-secondary, #161B22);
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent, #22D3EE);
+        font-size: 20px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease;
+    }
+
+    .fab-item:hover .fab-item-icon {
+        transform: scale(1.1);
+        border-color: var(--accent);
+    }
+</style>
+
+<div class="fab-container">
+    <div class="fab-menu">
+        <!-- These menu items link to actions defined in fab.js -->
+        <div class="fab-item" id="fab-add-transaction" title="Add Transaction">
+            <span class="fab-item-label">Add Transaction</span>
+            <div class="fab-item-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+        </div>
+        <div class="fab-item" id="fab-add-booking" title="Add Booking">
+            <span class="fab-item-label">Add Booking</span>
+            <div class="fab-item-icon"><i class="fas fa-calendar-alt"></i></div>
+        </div>
+        <div class="fab-item" id="fab-add-vehicle" title="Add Vehicle">
+            <span class="fab-item-label">Add Vehicle</span>
+            <div class="fab-item-icon"><i class="fas fa-car"></i></div>
+        </div>
+        <div class="fab-item" id="fab-add-customer" title="Add Customer">
+            <span class="fab-item-label">Add Customer</span>
+            <div class="fab-item-icon"><i class="fas fa-user-plus"></i></div>
+        </div>
+    </div>
+    <div class="fab-button">
+        <i class="fas fa-plus"></i>
+    </div>
+</div>

@@ -84,21 +84,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="/js/firebase-init.js"></script>
+    <script src="/js/fab.js"></script> <!-- FAB SCRIPT ADDED -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 if (!db) { console.error("DB not found"); return; }
                 
-                /**
-                 * Formats a number into a professional currency string.
-                 * @param {number} amount The number to format.
-                 * @returns {string} A formatted currency string (e.g., "Dhs 1,234.56").
-                 */
                 function formatCurrency(amount) {
                     return `Dhs ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 }
 
-                // Fetch and display company logo and name
                 const companyProfileRef = db.collection('company_profile').doc('main');
                 companyProfileRef.onSnapshot(doc => {
                     if (doc.exists) {
@@ -117,7 +112,6 @@
                     }
                 });
 
-                // --- Financial Widgets Logic ---
                 const now = new Date();
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -138,7 +132,6 @@
                     profitEl.classList.toggle('text-green-400', profit >= 0);
                 });
 
-                // --- Operational Widgets Logic ---
                 db.collection('bookings').where('status', '==', 'pending').onSnapshot(snap => { document.getElementById('pending-bookings').textContent = snap.size; });
                 const threeDaysFromNow = new Date();
                 threeDaysFromNow.setDate(now.getDate() + 3);
